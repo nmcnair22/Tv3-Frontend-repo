@@ -1,10 +1,10 @@
 <template>
-  <div class="dashboard-container">
+  <div class="finance-dashboard">
     <h1>Finance Dashboard</h1>
 
     <!-- Date Range Selector -->
-    <div class="date-selector">
-      <Select
+    <div class="controls-container">
+      <Dropdown
         v-model="selectedRange"
         :options="dateRanges"
         optionLabel="label"
@@ -29,261 +29,287 @@
       />
     </div>
 
-    <!-- Show Loading Spinner -->
-    <div v-if="isLoading" class="loading-overlay">
+    <!-- Loading and Error Messages -->
+    <div v-if="isLoading">
       <ProgressSpinner />
     </div>
-
-    <!-- Key Metrics Section (Only show when data is loaded) -->
-    <div v-if="!isLoading && incomeStatements.length && cashFlowStatements.length && balanceSheet.length" class="metrics-grid">
-      <Card title="Total Revenue" :value="totalRevenue" />
-      <Card title="Total Expenses" :value="totalExpenses" />
-      <Card title="Net Profit" :value="netProfit" />
-      <Card title="Cash Flow" :value="cashFlow" />
+    <div v-if="error">
+      <p class="error">{{ error }}</p>
     </div>
 
-    <!-- Detailed Reports Section -->
-    <div v-if="!isLoading && incomeStatements.length && cashFlowStatements.length && balanceSheet.length" class="statements-section">
-      <h2>Income Statements</h2>
-      <div v-if="incomeStatements.length">
-        <table>
-          <thead>
-            <tr>
-              <th>Description</th>
-              <th style="text-align: right;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="(item, index) in incomeStatements" :key="item.id || index">
-              <tr v-if="item.lineType === 'spacer'">
-                <td colspan="2" class="spacer-line"></td>
-              </tr>
-              <tr v-else>
-                <td :class="getLineClass(item)" :style="{ paddingLeft: item.indentation * 20 + 'px' }">{{ item.display }}</td>
-                <td :class="getLineClass(item)" style="text-align: right;">{{ formatCurrency(item.netChange) }}</td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+    <!-- Inflows Section -->
+    <div v-if="!isLoading && inflowsData">
+      <h2>Inflows</h2>
+      <div class="receivables-overview">
+        <div class="card">
+          <h3>Starting Receivables</h3>
+          <p>{{ formatCurrency(inflowsData.startingReceivables) }}</p>
+        </div>
+        <div class="card">
+          <h3>Ending Receivables</h3>
+          <p>{{ formatCurrency(inflowsData.endingReceivables) }}</p>
+        </div>
+        <div class="card">
+          <h3>Net Change</h3>
+          <p>{{ formatCurrency(inflowsData.netChangeReceivables) }}</p>
+        </div>
+        <div class="card">
+          <h3>Total New Invoices</h3>
+          <p>{{ formatCurrency(inflowsData.totalNewInvoices) }}</p>
+        </div>
+        <div class="card">
+          <h3>Total Payments Received</h3>
+          <p>{{ formatCurrency(inflowsData.totalPaymentsReceived) }}</p>
+        </div>
       </div>
 
-      <h2>Balance Sheet</h2>
-      <div v-if="balanceSheet.length">
-        <table>
-          <thead>
-            <tr>
-              <th>Description</th>
-              <th style="text-align: right;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="(item, index) in balanceSheet" :key="item.id || index">
-              <tr v-if="item.lineType === 'spacer'">
-                <td colspan="2" class="spacer-line"></td>
-              </tr>
-              <tr v-else>
-                <td :class="getLineClass(item)" :style="{ paddingLeft: item.indentation * 20 + 'px' }">{{ item.display }}</td>
-                <td :class="getLineClass(item)" style="text-align: right;">{{ formatCurrency(item.balance) }}</td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-
-      <h2>Cash Flow Statement</h2>
-      <div v-if="cashFlowStatements.length">
-        <table>
-          <thead>
-            <tr>
-              <th>Description</th>
-              <th style="text-align: right;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="(item, index) in cashFlowStatements" :key="item.id || index">
-              <tr v-if="item.lineType === 'spacer'">
-                <td colspan="2" class="spacer-line"></td>
-              </tr>
-              <tr v-else>
-                <td :class="getLineClass(item)" :style="{ paddingLeft: item.indentation * 20 + 'px' }">{{ item.display }}</td>
-                <td :class="getLineClass(item)" style="text-align: right;">{{ formatCurrency(item.netChange) }}</td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+      <!-- Revenue Categories Chart and Payments by Customer Chart -->
+      <div class="charts-container">
+        <div class="chart pie-chart">
+          <h3>Revenue by Category</h3>
+          <Chart type="pie" :data="revenueCategoriesChartData" />
+        </div>
+        <div class="chart bar-chart">
+          <h3>Payments by Customer</h3>
+          <Chart type="bar" :data="paymentsByCustomerChartData" :options="barChartOptions" />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { endOfMonth, startOfMonth, startOfYear, subMonths } from 'date-fns';
 import Button from 'primevue/button';
+import Chart from 'primevue/chart';
 import DatePicker from 'primevue/datepicker';
+import Dropdown from 'primevue/dropdown';
 import ProgressSpinner from 'primevue/progressspinner';
-import Select from 'primevue/select';
 import { computed, onMounted, ref } from 'vue';
-import Card from '../components/Card.vue';
 import { useFinancialDashboardStore } from '../store/financialDashboardStore';
 
-// Initialize the financial dashboard store
 const dashboardStore = useFinancialDashboardStore();
+
+const isLoading = computed(() => dashboardStore.isLoading);
+const inflowsData = computed(() => dashboardStore.inflowsData);
+const error = computed(() => dashboardStore.error);
+
 const selectedRange = ref(null);
 const selectedDates = ref(null);
 
-// Available date ranges
 const dateRanges = [
   { label: 'Month to Date', value: 'monthToDate' },
   { label: 'Year to Date', value: 'yearToDate' },
   { label: 'Last Month', value: 'lastMonth' },
-  { label: 'Custom', value: 'custom' }
+  { label: 'Custom', value: 'custom' },
 ];
 
-// Set default date range and trigger API call on mount
 onMounted(async () => {
   selectedRange.value = dateRanges[0];
   await applyDateFilter();
 });
 
-// Function to apply date filter and trigger API call
 async function applyDateFilter() {
-  try {
-    console.log('Applying date filter...');
-    let startDate, endDate;
-    const today = new Date();
+  let startDate, endDate;
+  const today = new Date();
 
-    // Calculate date range based on selection
-    if (selectedRange.value.value !== 'custom') {
-      if (selectedRange.value.value === 'monthToDate') {
-        startDate = startOfMonth(today);
-        endDate = today;
-      } else if (selectedRange.value.value === 'yearToDate') {
-        startDate = startOfYear(today);
-        endDate = today;
-      } else if (selectedRange.value.value === 'lastMonth') {
-        const lastMonthDate = subMonths(today, 1);
-        startDate = startOfMonth(lastMonthDate);
-        endDate = endOfMonth(lastMonthDate);
-      }
-    } else if (selectedDates.value && selectedDates.value.length === 2) {
-      [startDate, endDate] = selectedDates.value;
+  if (selectedRange.value.value !== 'custom') {
+    if (selectedRange.value.value === 'monthToDate') {
+      startDate = formatDate(startOfMonth(today));
+      endDate = formatDate(today);
+    } else if (selectedRange.value.value === 'yearToDate') {
+      startDate = formatDate(startOfYear(today));
+      endDate = formatDate(today);
+    } else if (selectedRange.value.value === 'lastMonth') {
+      const lastMonthDate = subMonths(today, 1);
+      startDate = formatDate(startOfMonth(lastMonthDate));
+      endDate = formatDate(endOfMonth(lastMonthDate));
     }
+  } else if (selectedDates.value && selectedDates.value.length === 2) {
+    [startDate, endDate] = selectedDates.value.map((date) => formatDate(date));
+  }
 
-    if (startDate && endDate) {
-      console.log('Fetching data for date range:', formatDate(startDate), 'to', formatDate(endDate));
-      await dashboardStore.fetchFinancialDashboardData(formatDate(startDate), formatDate(endDate));
-    }
-  } catch (error) {
-    console.error('Error applying date filter:', error);
+  if (startDate && endDate) {
+    await dashboardStore.fetchInflowsData(startDate, endDate);
   }
 }
 
-// Handle date range changes
 function onDateRangeChange() {
   if (selectedRange.value.value !== 'custom') {
     selectedDates.value = null;
   }
 }
 
-// Format date to string
 function formatDate(date) {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = `0${date.getMonth() + 1}`.slice(-2);
+  const day = `0${date.getDate()}`.slice(-2);
   return `${year}-${month}-${day}`;
 }
 
-// Access isLoading from the store (remove the local isLoading)
-const isLoading = computed(() => dashboardStore.isLoading);
-
-// Computed properties for income, cash flow, and balance sheet data
-const incomeStatements = computed(() => dashboardStore.incomeStatements || []);
-const cashFlowStatements = computed(() => dashboardStore.cashFlowStatements || []);
-const balanceSheet = computed(() => dashboardStore.balanceSheet || []);
-
-// Computed properties for key metrics
-const totalRevenue = computed(() => incomeStatements.value.reduce((acc, item) => acc + (item.netChange || 0), 0));
-const totalExpenses = computed(() => cashFlowStatements.value.reduce((acc, item) => acc + (item.netChange || 0), 0));
-const netProfit = computed(() => totalRevenue.value - totalExpenses.value);
-const cashFlow = computed(() => cashFlowStatements.value.reduce((acc, item) => acc + (item.netChange || 0), 0));
-
-// Formatting and helper functions
-function getLineClass(item) {
-  const classes = [];
-  if (item.lineType === 'header') {
-    classes.push('header-line');
-  } else if (item.lineType === 'total') {
-    classes.push('total-line');
-  } else if (item.lineType === 'detail') {
-    classes.push('detail-line');
-  }
-  if (item.netChange < 0 || item.balance < 0) {
-    classes.push('negative-amount');
-  }
-  return classes.join(' ');
-}
-
 function formatCurrency(value) {
-  const absValue = Math.abs(value);
+  if (typeof value !== 'number') {
+    return '$0.00';
+  }
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 2,
   });
-  return value < 0 ? `(${formatter.format(absValue)})` : formatter.format(absValue);
+  return formatter.format(value);
 }
+
+// Helper functions for date calculations
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function endOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
+function startOfYear(date) {
+  return new Date(date.getFullYear(), 0, 1);
+}
+
+function subMonths(date, months) {
+  return new Date(date.getFullYear(), date.getMonth() - months, date.getDate());
+}
+
+// Chart Data
+const revenueCategoriesChartData = computed(() => {
+  if (!inflowsData.value || !inflowsData.value.revenueCategories) {
+    return {};
+  }
+  return {
+    labels: inflowsData.value.revenueCategories.map((item) => item.category),
+    datasets: [
+      {
+        data: inflowsData.value.revenueCategories.map((item) => item.amount),
+        backgroundColor: [
+          '#42A5F5',
+          '#66BB6A',
+          '#FFA726',
+          '#FFCA28',
+          '#26C6DA',
+          '#AB47BC',
+          '#EC407A',
+        ],
+        hoverBackgroundColor: [
+          '#64B5F6',
+          '#81C784',
+          '#FFB74D',
+          '#FFD54F',
+          '#4DD0E1',
+          '#BA68C8',
+          '#F06292',
+        ],
+      },
+    ],
+  };
+});
+
+const paymentsByCustomerChartData = computed(() => {
+  if (!inflowsData.value || !inflowsData.value.paymentsByCustomer) {
+    return {};
+  }
+  return {
+    labels: inflowsData.value.paymentsByCustomer.map((item) => item.customer),
+    datasets: [
+      {
+        label: 'Payments Received',
+        data: inflowsData.value.paymentsByCustomer.map((item) => item.amount),
+        backgroundColor: [
+          '#42A5F5', '#66BB6A', '#FFA726', '#FFCA28', '#26C6DA', '#AB47BC', '#EC407A'
+        ],
+      },
+    ],
+  };
+});
+
+const barChartOptions = {
+  indexAxis: 'y',
+  responsive: true,
+  scales: {
+    x: {
+      ticks: {
+        callback: function (value) {
+          return formatCurrency(value);
+        },
+      },
+    },
+  },
+  plugins: {
+    legend: {
+      display: false,
+    },
+  },
+};
 </script>
 
 <style scoped>
-/* Styles for table, grid, and loading spinner */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: Arial, sans-serif;
+.finance-dashboard {
+  padding: 1rem;
 }
 
-th {
-  text-align: left;
-  border-bottom: 2px solid #000;
-  padding: 8px;
-  font-size: 16px;
+.controls-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-td {
-  padding: 8px;
-  font-size: 14px;
-}
-
-.header-line {
-  font-weight: bold;
-  font-size: 16px;
-}
-
-.total-line {
-  font-weight: bold;
-  border-top: 1px solid #000;
-  font-size: 15px;
-}
-
-.spacer-line {
-  height: 15px;
-}
-
-.negative-amount {
-  color: red;
-}
-
-.loading-overlay {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+.receivables-overview {
+  display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 2rem;
+}
+
+.receivables-overview .card {
+  flex: 1 1 calc(20% - 1rem);
+  background-color: #f7f9fc;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.receivables-overview .card h3 {
+  margin-bottom: 0.5rem;
+}
+
+.error {
+  color: red;
+  font-weight: bold;
+}
+
+.charts-container {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.chart {
+  background-color: #f7f9fc;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.pie-chart {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .receivables-overview .card {
+    flex: 1 1 calc(50% - 1rem);
+  }
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .receivables-overview .card {
+    flex: 1 1 100%;
+  }
 }
 </style>

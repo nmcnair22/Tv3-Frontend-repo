@@ -31,6 +31,9 @@ export default {
                 "surface-900": "rgb(var(--surface-900))",
                 "surface-950": "rgb(var(--surface-950))",
             },
+            fontFamily: {
+                sans: ['Archivo', 'sans-serif'], // Set 'Archivo' as the default font
+            },
         },
     },
 };

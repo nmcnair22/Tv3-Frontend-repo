@@ -1,101 +1,98 @@
+<!-- src/pages/FinanceDashboard.vue -->
 <template>
   <div class="finance-dashboard">
     <h1>Finance Dashboard</h1>
 
-    <!-- Date Range Selector -->
-    <div class="controls-container">
-      <Dropdown
-        v-model="selectedRange"
-        :options="dateRanges"
-        optionLabel="label"
-        placeholder="Select Date Range"
-        @change="onDateRangeChange"
-        style="width: 200px;"
-      />
-      <DatePicker
-        v-model="selectedDates"
-        selectionMode="range"
-        dateFormat="yy-mm-dd"
-        placeholder="Select Custom Date Range"
-        showIcon
-        :disabled="selectedRange && selectedRange.value !== 'custom'"
-        style="width: 300px;"
-      />
-      <Button
-        label="Apply"
-        @click="applyDateFilter"
-        icon="pi pi-check"
-        class="p-button-success"
-      />
-    </div>
+    <!-- Date Range Selector Component -->
+    <DateRangeSelector
+      v-model:modelValueRange="selectedRange"
+      v-model:modelValueDates="selectedDates"
+      :dateRanges="dateRanges"
+      @apply-filter="applyDateFilter"
+    />
 
-    <!-- Loading and Error Messages -->
-    <div v-if="isLoading">
-      <ProgressSpinner />
-    </div>
-    <div v-if="error">
-      <p class="error">{{ error }}</p>
-    </div>
+    <!-- Loading and Error Components -->
+    <Loading v-if="isLoading" />
+    <ErrorMessage v-if="error" :message="error" />
 
     <!-- Inflows Section -->
     <div v-if="!isLoading && inflowsData">
-      <h2>Inflows</h2>
-      <div class="receivables-overview">
-        <div class="card">
-          <h3>Starting Receivables</h3>
-          <p>{{ formatCurrency(inflowsData.startingReceivables) }}</p>
+      <h2>Inflows{{ formattedDateRange ? ': ' + formattedDateRange : '' }}</h2>
+
+      <!-- Receivables Overview Cards Component -->
+      <ReceivablesOverview :inflowsData="inflowsData" />
+
+      <!-- Add spacing between KPI cards and charts -->
+      <div class="section-spacing"></div>
+
+      <!-- Charts Container -->
+      <div class="charts-container">
+        <!-- Pie Chart (RevenueByCategoryChart) -->
+        <div class="chart-item pie-chart">
+          <RevenueByCategoryChart
+            v-if="inflowsData.revenueCategories && inflowsData.revenueCategories.length"
+            :revenueCategories="inflowsData.revenueCategories"
+          />
         </div>
-        <div class="card">
-          <h3>Ending Receivables</h3>
-          <p>{{ formatCurrency(inflowsData.endingReceivables) }}</p>
-        </div>
-        <div class="card">
-          <h3>Net Change</h3>
-          <p>{{ formatCurrency(inflowsData.netChangeReceivables) }}</p>
-        </div>
-        <div class="card">
-          <h3>Total New Invoices</h3>
-          <p>{{ formatCurrency(inflowsData.totalNewInvoices) }}</p>
-        </div>
-        <div class="card">
-          <h3>Total Payments Received</h3>
-          <p>{{ formatCurrency(inflowsData.totalPaymentsReceived) }}</p>
+
+        <!-- Line Chart (PaymentsByCustomerChart) -->
+        <div class="chart-item payment-chart">
+          <PaymentsByCustomerChart
+            v-if="inflowsData.paymentsByCustomer && inflowsData.paymentsByCustomer.length"
+            :paymentsByCustomer="inflowsData.paymentsByCustomer"
+          />
         </div>
       </div>
 
-      <!-- Revenue Categories Chart and Payments by Customer Chart -->
-      <div class="charts-container">
-        <div class="chart pie-chart">
-          <h3>Revenue by Category</h3>
-          <Chart type="pie" :data="revenueCategoriesChartData" />
-        </div>
-        <div class="chart bar-chart">
-          <h3>Payments by Customer</h3>
-          <Chart type="bar" :data="paymentsByCustomerChartData" :options="barChartOptions" />
-        </div>
+      <!-- Aging Report Section -->
+      <AgingReport
+        v-if="selectedEndDate && agingReportData.length > 0"
+        :asOfDate="formatDate(selectedEndDate)"
+        :reportData="agingReportData"
+        :isLoading="agingReportIsLoading"
+        :error="agingReportError"
+      />
+      <div v-else-if="!agingReportIsLoading && agingReportError">
+        <ErrorMessage :message="agingReportError" />
+      </div>
+      <div v-else-if="!agingReportIsLoading">
+        <p>No aging report data available.</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import Button from 'primevue/button';
-import Chart from 'primevue/chart';
-import DatePicker from 'primevue/datepicker';
-import Dropdown from 'primevue/dropdown';
-import ProgressSpinner from 'primevue/progressspinner';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useAgingReportStore } from '../store/agingReportStore';
 import { useFinancialDashboardStore } from '../store/financialDashboardStore';
 
+// Import components
+import AgingReport from '../components/AgingReport.vue';
+import DateRangeSelector from '../components/DateRangeSelector.vue';
+import ErrorMessage from '../components/ErrorMessage.vue';
+import Loading from '../components/Loading.vue';
+import PaymentsByCustomerChart from '../components/PaymentsByCustomerChart.vue';
+import ReceivablesOverview from '../components/ReceivablesOverview.vue';
+import RevenueByCategoryChart from '../components/RevenueByCategoryChart.vue';
+
 const dashboardStore = useFinancialDashboardStore();
+const agingReportStore = useAgingReportStore();
 
 const isLoading = computed(() => dashboardStore.isLoading);
-const inflowsData = computed(() => dashboardStore.inflowsData);
+const inflowsData = computed(() => dashboardStore.inflowsData || {});
 const error = computed(() => dashboardStore.error);
 
+const agingReportData = computed(() => agingReportStore.agingReport || []);
+const agingReportIsLoading = computed(() => agingReportStore.isLoading);
+const agingReportError = computed(() => agingReportStore.error);
+
+// Initialize selectedRange and selectedDates
 const selectedRange = ref(null);
 const selectedDates = ref(null);
+const selectedEndDate = ref(null); // Store the end date separately
 
+// Define dateRanges
 const dateRanges = [
   { label: 'Month to Date', value: 'monthToDate' },
   { label: 'Year to Date', value: 'yearToDate' },
@@ -103,8 +100,77 @@ const dateRanges = [
   { label: 'Custom', value: 'custom' },
 ];
 
+// Property to store formatted date range
+const formattedDateRange = ref('');
+
+// Watch for changes in selectedRange and selectedDates to update formattedDateRange
+watch([selectedRange, selectedDates], () => {
+  console.log('Watch Triggered: selectedRange or selectedDates changed');
+  formattedDateRange.value = getFormattedDateRange();
+  selectedEndDate.value = getSelectedEndDate(); // Update the selected end date
+  console.log('Updated Selected End Date:', selectedEndDate.value);
+
+  if (selectedEndDate.value) {
+    fetchAgingReport(formatDate(selectedEndDate.value)); // Pass formatted date string
+  }
+});
+
+function getFormattedDateRange() {
+  let startDate, endDate;
+  const today = new Date();
+
+  if (selectedRange.value && selectedRange.value.value !== 'custom') {
+    if (selectedRange.value.value === 'monthToDate') {
+      startDate = startOfMonth(today);
+      endDate = today;
+      return `Month to Date (${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)})`;
+    } else if (selectedRange.value.value === 'yearToDate') {
+      startDate = startOfYear(today);
+      endDate = today;
+      return `Year to Date (${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)})`;
+    } else if (selectedRange.value.value === 'lastMonth') {
+      const lastMonthDate = subMonths(today, 1);
+      startDate = startOfMonth(lastMonthDate);
+      endDate = endOfMonth(lastMonthDate);
+      return `Last Month (${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)})`;
+    }
+  } else if (
+    selectedRange.value &&
+    selectedRange.value.value === 'custom' &&
+    selectedDates.value &&
+    selectedDates.value.length === 2
+  ) {
+    [startDate, endDate] = selectedDates.value;
+    return `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}`;
+  }
+
+  return '';
+}
+
+function getSelectedEndDate() {
+  if (selectedRange.value && selectedRange.value.value !== 'custom') {
+    const today = new Date();
+    if (selectedRange.value.value === 'monthToDate') {
+      return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    } else if (selectedRange.value.value === 'yearToDate') {
+      return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    } else if (selectedRange.value.value === 'lastMonth') {
+      const lastMonthDate = subMonths(today, 1);
+      return endOfMonth(lastMonthDate);
+    }
+  } else if (selectedDates.value && selectedDates.value.length === 2) {
+    const endDate = selectedDates.value[1];
+    return new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  }
+  return null;
+}
+
 onMounted(async () => {
-  selectedRange.value = dateRanges[0];
+  // Set default selected range to 'Month to Date' if not already set
+  if (!selectedRange.value) {
+    selectedRange.value = dateRanges[0]; // Default to 'Month to Date'
+    selectedEndDate.value = getSelectedEndDate();
+  }
   await applyDateFilter();
 });
 
@@ -112,7 +178,7 @@ async function applyDateFilter() {
   let startDate, endDate;
   const today = new Date();
 
-  if (selectedRange.value.value !== 'custom') {
+  if (selectedRange.value && selectedRange.value.value !== 'custom') {
     if (selectedRange.value.value === 'monthToDate') {
       startDate = formatDate(startOfMonth(today));
       endDate = formatDate(today);
@@ -129,32 +195,23 @@ async function applyDateFilter() {
   }
 
   if (startDate && endDate) {
+    console.log('Fetching inflows data with startDate:', startDate, 'and endDate:', endDate);
     await dashboardStore.fetchInflowsData(startDate, endDate);
+    // Update formattedDateRange
+    formattedDateRange.value = getFormattedDateRange();
+    selectedEndDate.value = parseDate(endDate); // Set the selected end date as Date object
+    console.log('Applied Date Filter. Selected End Date:', selectedEndDate.value);
   }
 }
 
-function onDateRangeChange() {
-  if (selectedRange.value.value !== 'custom') {
-    selectedDates.value = null;
+async function fetchAgingReport(asOfDate) {
+  try {
+    console.log('Fetching aging report for asOfDate:', asOfDate);
+    await agingReportStore.fetchAgingReport(asOfDate);
+    console.log('Aging report fetched successfully');
+  } catch (error) {
+    console.error('Error fetching aging report:', error);
   }
-}
-
-function formatDate(date) {
-  const year = date.getFullYear();
-  const month = `0${date.getMonth() + 1}`.slice(-2);
-  const day = `0${date.getDate()}`.slice(-2);
-  return `${year}-${month}-${day}`;
-}
-
-function formatCurrency(value) {
-  if (typeof value !== 'number') {
-    return '$0.00';
-  }
-  const formatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  });
-  return formatter.format(value);
 }
 
 // Helper functions for date calculations
@@ -171,78 +228,25 @@ function startOfYear(date) {
 }
 
 function subMonths(date, months) {
-  return new Date(date.getFullYear(), date.getMonth() - months, date.getDate());
+  return new Date(date.getFullYear(), date.getMonth() - months, 1);
 }
 
-// Chart Data
-const revenueCategoriesChartData = computed(() => {
-  if (!inflowsData.value || !inflowsData.value.revenueCategories) {
-    return {};
-  }
-  return {
-    labels: inflowsData.value.revenueCategories.map((item) => item.category),
-    datasets: [
-      {
-        data: inflowsData.value.revenueCategories.map((item) => item.amount),
-        backgroundColor: [
-          '#42A5F5',
-          '#66BB6A',
-          '#FFA726',
-          '#FFCA28',
-          '#26C6DA',
-          '#AB47BC',
-          '#EC407A',
-        ],
-        hoverBackgroundColor: [
-          '#64B5F6',
-          '#81C784',
-          '#FFB74D',
-          '#FFD54F',
-          '#4DD0E1',
-          '#BA68C8',
-          '#F06292',
-        ],
-      },
-    ],
-  };
-});
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = `0${date.getMonth() + 1}`.slice(-2);
+  const day = `0${date.getDate()}`.slice(-2);
+  return `${year}-${month}-${day}`;
+}
 
-const paymentsByCustomerChartData = computed(() => {
-  if (!inflowsData.value || !inflowsData.value.paymentsByCustomer) {
-    return {};
-  }
-  return {
-    labels: inflowsData.value.paymentsByCustomer.map((item) => item.customer),
-    datasets: [
-      {
-        label: 'Payments Received',
-        data: inflowsData.value.paymentsByCustomer.map((item) => item.amount),
-        backgroundColor: [
-          '#42A5F5', '#66BB6A', '#FFA726', '#FFCA28', '#26C6DA', '#AB47BC', '#EC407A'
-        ],
-      },
-    ],
-  };
-});
+function parseDate(dateString) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
 
-const barChartOptions = {
-  indexAxis: 'y',
-  responsive: true,
-  scales: {
-    x: {
-      ticks: {
-        callback: function (value) {
-          return formatCurrency(value);
-        },
-      },
-    },
-  },
-  plugins: {
-    legend: {
-      display: false,
-    },
-  },
-};
+function formatDisplayDate(date) {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  return date.toLocaleDateString(undefined, options);
+}
 </script>
 
 <style scoped>
@@ -250,66 +254,25 @@ const barChartOptions = {
   padding: 1rem;
 }
 
-.controls-container {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.receivables-overview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.receivables-overview .card {
-  flex: 1 1 calc(20% - 1rem);
-  background-color: #f7f9fc;
-  padding: 1rem;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.receivables-overview .card h3 {
-  margin-bottom: 0.5rem;
-}
-
-.error {
-  color: red;
-  font-weight: bold;
+.section-spacing {
+  margin-bottom: 1.5rem; /* Adjust the value as needed */
 }
 
 .charts-container {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 1fr 2fr; /* 1/3 and 2/3 ratio */
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.chart {
-  background-color: #f7f9fc;
-  padding: 1rem;
-  border-radius: 8px;
-}
-
-.pie-chart {
-  max-width: 100%;
+/* Ensure that the chart components fill their grid cells */
+.chart-item {
+  width: 100%;
 }
 
 @media (max-width: 768px) {
-  .receivables-overview .card {
-    flex: 1 1 calc(50% - 1rem);
-  }
   .charts-container {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .receivables-overview .card {
-    flex: 1 1 100%;
   }
 }
 </style>

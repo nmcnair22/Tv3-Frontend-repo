@@ -1,11 +1,11 @@
-// src/store/financialDashboardStore.ts
+// src/store/financialDashboardStore.js
 
 import axios from 'axios';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
 export const useFinancialDashboardStore = defineStore('financialDashboardStore', () => {
-    const inflowsData = ref(null);
+    const inflowsData = ref({});
     const isLoading = ref(false);
     const error = ref(null);
 
@@ -19,10 +19,19 @@ export const useFinancialDashboardStore = defineStore('financialDashboardStore',
         error.value = null;
 
         try {
-            const response = await axios.get('http://localhost:3000/financial-dashboard/inflows', {
+            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+            const response = await axios.get(`${backendUrl}/financial-dashboard/inflows`, {
                 params: { startDate, endDate },
             });
-            inflowsData.value = response.data;
+
+            if (response.data) {
+                inflowsData.value = response.data;
+                console.log('Fetched inflowsData:', inflowsData.value); // Add this line
+            } else {
+                inflowsData.value = {};
+                console.error('Response data is empty or undefined:', response);
+                error.value = 'No data received from the server.';
+            }
         } catch (err) {
             error.value = 'Failed to fetch inflows data';
             console.error('Error fetching inflows data:', err);
@@ -30,7 +39,6 @@ export const useFinancialDashboardStore = defineStore('financialDashboardStore',
             isLoading.value = false;
         }
     }
-
     return {
         inflowsData,
         fetchInflowsData,
