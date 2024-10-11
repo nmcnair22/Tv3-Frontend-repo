@@ -1,7 +1,6 @@
 <!-- src/pages/FinanceDashboard.vue -->
 <template>
   <div class="finance-dashboard">
-    <h1>Finance Dashboard</h1>
 
     <!-- Date Range Selector Component -->
     <DateRangeSelector
@@ -17,7 +16,9 @@
 
     <!-- Inflows Section -->
     <div v-if="!isLoading && inflowsData">
-      <h2>Inflows{{ formattedDateRange ? ': ' + formattedDateRange : '' }}</h2>
+      <h2 class="section-title">
+        Inflows{{ formattedDateRange ? ': ' + formattedDateRange : '' }}
+      </h2>
 
       <!-- Receivables Overview Cards Component -->
       <ReceivablesOverview :inflowsData="inflowsData" />
@@ -252,27 +253,79 @@ function formatDisplayDate(date) {
 <style scoped>
 .finance-dashboard {
   padding: 1rem;
+  background-color: #FFFFFF; /* Keep the main background white for clarity */
 }
 
+/* Main Title Styling */
+.main-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #08294A; /* Night Sky */
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Section Title Styling */
+.section-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #08294A; /* Night Sky */
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+}
+
+/* Buttons */
+.button {
+  background-color: #FFB400; /* Sunrise Yellow */
+  color: #FFFFFF; /* White text for contrast */
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: #F29000; /* Shade 2 of Sunrise Yellow */
+}
+
+/* Section Spacing */
 .section-spacing {
-  margin-bottom: 1.5rem; /* Adjust the value as needed */
+  margin-bottom: 2rem;
 }
 
+/* Charts Container */
 .charts-container {
   display: grid;
-  grid-template-columns: 1fr 2fr; /* 1/3 and 2/3 ratio */
+  grid-template-columns: 1fr 2fr;
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-/* Ensure that the chart components fill their grid cells */
 .chart-item {
-  width: 100%;
+  height: 350px; /* Set a consistent height */
+  display: flex;
+  flex-direction: column;
+  background-color: #F7F9FC; /* Light background for charts */
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
 }
 
+.chart-item > * {
+  flex: 1;
+}
+
+/* Responsive Design for Smaller Screens */
 @media (max-width: 768px) {
   .charts-container {
     grid-template-columns: 1fr;
   }
+
+  .section-title {
+    font-size: 1.5rem;
+  }
+
 }
 </style>

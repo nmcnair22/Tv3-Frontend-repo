@@ -1,21 +1,27 @@
 <!-- src/components/PaymentsByCustomerChart.vue -->
 <template>
   <div class="chart-container">
-    <h3>Payments by Customer</h3>
-    <Chart
-      ref="chartRef"
-      :type="chartType"
-      :data="chartData"
-      :options="chartOptions"
-      class="chart"
-    />
-    <Button
-      label="View All Payments"
-      icon="pi pi-table"
-      class="p-button-text view-all-button"
-      @click="showModal"
-    />
+    <!-- Header with Title and "View All Payments" Button -->
+    <div class="chart-header">
+      <h3>Payments by Customer</h3>
+      <Button
+        label="View All Payments"
+        icon="pi pi-table"
+        class="view-all-button"
+        @click="showModal"
+      />
+    </div>
 
+    <div class="chart-wrapper">
+      <Chart
+        ref="chartRef"
+        :type="chartType"
+        :data="chartData"
+        :options="chartOptions"
+        class="chart"
+      />
+    </div>
+    
     <!-- Include the Modal Component -->
     <PaymentsByCustomerModal
       :visible.sync="isModalVisible"
@@ -47,7 +53,7 @@ function showModal() {
   isModalVisible.value = true;
 }
 
-const chartType = 'bar'; // Use 'bar' type
+const chartType = 'bar';
 const chartData = computed(() => {
   if (!props.paymentsByCustomer.length) {
     return null;
@@ -68,11 +74,23 @@ const chartData = computed(() => {
     });
   }
 
-  // Define an array of colors for the bars
+  // Define an array of colors for the bars using branding palette
   const colors = [
-    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-    '#FF9F40', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
-    '#9966FF', '#FF9F40', '#FF6384', '#36A2EB', '#FFCE56',
+    '#297FB7', // Primary Blue (Replaced Sunrise Yellow)
+    '#207FBF', // Morning Blue
+    '#08294A', // Night Sky
+    '#1F5F8A', // Darker Blue
+    '#FF851B', // Complementary Orange
+    '#3D9970', // Soft Green
+    '#6A4C93', // Complementary Purple
+    '#FF8080', // Tint 1 of Horizon Red
+    '#A30000', // Shade 1 of Horizon Red
+    '#595959', // Dark Gray
+    '#39A9DB', // Bright Teal
+    '#FF9F40', // Additional color
+    '#9966FF', // Additional color
+    '#FF6384', // Additional color
+    '#36A2EB', // Additional color
   ];
 
   return {
@@ -88,8 +106,9 @@ const chartData = computed(() => {
 });
 
 const chartOptions = computed(() => ({
-  indexAxis: 'y', // Set index axis to 'y' for horizontal bar chart
+  responsive: true,
   maintainAspectRatio: false,
+  indexAxis: 'y',
   plugins: {
     legend: {
       display: false,
@@ -99,7 +118,7 @@ const chartOptions = computed(() => ({
     x: {
       beginAtZero: true,
       ticks: {
-        color: '#6B7280', // Text color for x-axis ticks
+        color: '#595959', // Dark Gray for x-axis ticks
       },
       grid: {
         display: false,
@@ -108,7 +127,7 @@ const chartOptions = computed(() => ({
     },
     y: {
       ticks: {
-        color: '#6B7280', // Text color for y-axis labels
+        color: '#595959', // Dark Gray for y-axis labels
         autoSkip: false,
         maxTicksLimit: 20,
       },
@@ -126,18 +145,92 @@ const chartOptions = computed(() => ({
   display: flex;
   flex-direction: column;
   height: 100%;
+  background-color: #F7F9FC; /* Light background for charts */
+  border: 1px solid #E0E0E0; /* Light border to match dashboard styling */
+  border-radius: 8px;
+  padding: 1rem;
 }
 
-.chart-container h3 {
+/* Header Styling */
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1rem;
 }
 
-.chart {
-  flex-grow: 1; /* Allow the chart to fill the available space */
+/* Title Styling */
+.chart-header h3 {
+  margin: 0;
+  color: #08294A; /* Night Sky for titles */
+  font-weight: 600;
+  font-size: 1.75rem;
 }
 
+/* "View All Payments" Button Styling */
 .view-all-button {
-  margin-top: 1rem;
-  align-self: flex-end; /* Position the button at the bottom right */
+  background-color: #FFFFFF !important;
+  color: #297FB7 !important;
+  border: 1px solid #297FB7 !important;
+  padding: 0.25rem 0.5rem; /* Reduced padding for smaller size */
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.875rem; /* Reduced font size */
+  cursor: pointer;
+}
+
+/* Hover State */
+.view-all-button:hover {
+  background-color: #297FB7 !important;
+  color: #FFFFFF !important;
+}
+
+/* Active State */
+.view-all-button:active {
+  background-color: #08294A!important;
+}
+
+/* Disabled State */
+.view-all-button:disabled {
+  background-color: #D3D3D3 !important; /* Light Gray for disabled state */
+  color: #A6A6A6 !important; /* Neutral Gray text */
+  cursor: not-allowed;
+}
+
+/* Icon Adjustment */
+.view-all-button .pi {
+  margin-right: 0.3rem;
+}
+
+/* Chart Wrapper */
+.chart-wrapper {
+  flex-grow: 1;
+}
+
+.chart {
+  width: 100%;
+  height: 100%;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .global-search {
+    width: 100%;
+  }
+
+  /* Adjust header layout on smaller screens */
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .view-all-button {
+    margin-top: 0.5rem;
+    width: 100%;
+  }
+
+  .chart-header h3 {
+    font-size: 1.5rem;
+  }
 }
 </style>

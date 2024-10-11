@@ -1,9 +1,13 @@
 <!-- src/components/AgingReport.vue -->
 <template>
   <div class="aging-report">
-    <h2>Aging Report{{ formattedAsOfDate ? ': ' + formattedAsOfDate : '' }}</h2>
+    <h2 class="section-title">
+      Aging Report{{ formattedAsOfDate ? ': ' + formattedAsOfDate : '' }}
+    </h2>
+
     <!-- Loading Indicator -->
     <Loading v-if="isLoading" />
+
     <!-- Error Message -->
     <ErrorMessage v-if="error" :message="error" />
 
@@ -14,7 +18,7 @@
         <InputText
           v-model="filters['global'].value"
           placeholder="Global Search"
-          class="w-1/4 p-inputtext-sm"
+          class="global-search"
         />
       </div>
 
@@ -31,8 +35,9 @@
         scrollHeight="flex"
         resizableColumns
         columnResizeMode="expand"
-        tableStyle="min-width: 70rem"
+        :tableStyle="{ minWidth: '70rem' }"
         filterDisplay="menu"
+        class="aging-table"
       >
         <!-- Customer Name Column -->
         <Column
@@ -54,7 +59,7 @@
           dataType="numeric"
           sortable
           filter
-          style="min-width: 10rem; text-align: center"
+          style="min-width: 10rem; text-align: right"
         >
           <template #body="{ data }">
             {{ formatCurrency(data.balanceDue) }}
@@ -68,7 +73,7 @@
           dataType="numeric"
           sortable
           filter
-          style="min-width: 10rem; text-align: center"
+          style="min-width: 10rem; text-align: right"
         >
           <template #body="{ data }">
             {{ formatCurrency(data.currentAmount) }}
@@ -82,7 +87,7 @@
           dataType="numeric"
           sortable
           filter
-          style="min-width: 10rem; text-align: center"
+          style="min-width: 10rem; text-align: right"
         >
           <template #body="{ data }">
             {{ formatCurrency(data.period1Amount) }}
@@ -96,7 +101,7 @@
           dataType="numeric"
           sortable
           filter
-          style="min-width: 10rem; text-align: center"
+          style="min-width: 10rem; text-align: right"
         >
           <template #body="{ data }">
             {{ formatCurrency(data.period2Amount) }}
@@ -110,7 +115,7 @@
           dataType="numeric"
           sortable
           filter
-          style="min-width: 10rem; text-align: center"
+          style="min-width: 10rem; text-align: right"
         >
           <template #body="{ data }">
             {{ formatCurrency(data.period3Amount) }}
@@ -140,7 +145,7 @@
             <Button
               icon="pi pi-clock"
               label="View"
-              class="p-button-text p-button-info"
+              class="view-history-button"
               @click="openPaymentHistoryModal(data.customerNumber, data.name)"
             />
           </template>
@@ -179,7 +184,12 @@ const selectedCustomerNumber = ref('');
 const selectedCustomerName = ref('');
 
 function openPaymentHistoryModal(customerNumber, customerName) {
-  console.log('Opening modal for customerNumber:', customerNumber, 'customerName:', customerName);
+  console.log(
+    'Opening modal for customerNumber:',
+    customerNumber,
+    'customerName:',
+    customerName
+  );
   selectedCustomerNumber.value = customerNumber;
   selectedCustomerName.value = customerName;
   isPaymentModalVisible.value = true;
@@ -274,10 +284,114 @@ function calculateRank(item) {
   margin-top: 2rem;
 }
 
+.section-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #08294A; /* Night Sky */
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #E0E0E0;
+  padding-bottom: 0.5rem;
+}
+
 .table-header {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   margin-bottom: 1rem;
+}
+
+.global-search {
+  width: 300px;
+  padding: 0.5rem;
+  border: 1px solid #E0E0E0;
+  border-radius: 4px;
+  font-size: 1rem;
+  color: #08294A;
+}
+
+.aging-table {
+  background-color: #FFFFFF;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+}
+
+/* Override the default highlight color for sorted column headers */
+::v-deep .aging-table .p-datatable-thead > tr > th.p-datatable-column-sorted {
+  background-color: #297FB7 !important; /* Desired blue color */
+  color: #FFFFFF !important; /* Ensure text is readable */
+}
+
+/* Ensure the sort icon is visible */
+::v-deep .aging-table .p-datatable-thead > tr > th.p-datatable-column-sorted .p-sortable-column-icon {
+  color: #FFFFFF !important; /* Ensure sort icon is visible */
+}
+
+/* Override the paginator active page highlight */
+::v-deep .aging-table .p-paginator .p-paginator-page.p-highlight {
+  background-color: #297FB7 !important; /* Desired blue color */
+  border-color: #297FB7 !important;
+  color: #FFFFFF !important; /* Ensure text is readable */
+}
+
+/* Override paginator buttons */
+::v-deep .aging-table .p-paginator .p-paginator-page,
+::v-deep .aging-table .p-paginator .p-paginator-next,
+::v-deep .aging-table .p-paginator .p-paginator-prev {
+  background-color: #FFFFFF !important;
+  color: #297FB7 !important;
+  border: 1px solid #297FB7 !important;
+}
+
+::v-deep .aging-table .p-paginator .p-paginator-page:hover,
+::v-deep .aging-table .p-paginator .p-paginator-next:hover,
+::v-deep .aging-table .p-paginator .p-paginator-prev:hover {
+  background-color: #297FB7 !important; /* Blue background on hover */
+  color: #FFFFFF !important; /* White text/icons on hover */
+}
+
+::v-deep .aging-table .p-paginator .p-paginator-page.p-highlight:hover,
+::v-deep .aging-table .p-paginator .p-paginator-next:hover,
+::v-deep .aging-table .p-paginator .p-paginator-prev:hover {
+  background-color: #1F5F8A !important; /* Darker blue on hover */
+  color: #FFFFFF !important;
+}
+
+/* Update the button styles to use the new blue color */
+.view-history-button {
+  background-color: #FFFFFF !important;
+  color: #297FB7 !important;
+  border: 1px solid #297FB7 !important;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.view-history-button:hover {
+  background-color: #297FB7 !important;
+  color: #FFFFFF !important;
+}
+
+.view-history-button:active {
+  background-color: #08294A!important;
+}
+
+.view-history-button:disabled {
+  background-color: #D3D3D3; /* Light Gray for disabled state */
+  color: #A6A6A6; /* Neutral Gray text */
+  cursor: not-allowed;
+}
+
+.view-history-button .pi {
+  margin-right: 0.3rem;
+}
+
+@media (max-width: 768px) {
+  .global-search {
+    width: 100%;
+  }
 }
 </style>
