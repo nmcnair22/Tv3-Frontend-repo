@@ -5,7 +5,7 @@
       <label for="dateRangeOptions">Date Range:</label>
       <Select
         id="dateRangeOptions"
-        v-model="localSelectedRange"
+        v-model="internalSelectedRange"
         :options="dateRanges"
         optionLabel="label"
         placeholder="Select Date Range"
@@ -17,12 +17,12 @@
       <label for="customDateRange">Custom Dates:</label>
       <DatePicker
         id="customDateRange"
-        v-model="localSelectedDates"
+        v-model="internalSelectedDates"
         selectionMode="range"
         dateFormat="yy-mm-dd"
         placeholder="Select Custom Date Range"
         showIcon
-        :disabled="localSelectedRange && localSelectedRange.value !== 'custom'"
+        :disabled="isDatePickerDisabled"
         class="custom-datepicker"
       />
     </div>
@@ -34,6 +34,7 @@
         @click="applyDateFilter"
         icon="pi pi-check"
         class="apply-button"
+        :disabled="!canApply"
       />
     </div>
   </div>
@@ -43,7 +44,7 @@
 import Button from 'primevue/button';
 import DatePicker from 'primevue/datepicker';
 import Select from 'primevue/select';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 export default {
   components: {
@@ -52,137 +53,160 @@ export default {
     Button,
   },
   props: {
-    modelValueRange: {
-      type: Object,
-      default: null,
-    },
-    modelValueDates: {
-      type: Array,
-      default: null,
-    },
+    // Removed modelValueRange and modelValueDates props to decouple immediate updates
     dateRanges: {
       type: Array,
       required: true,
     },
+    initialSelectedRange: { // Renamed for clarity
+      type: Object,
+      default: null,
+    },
+    initialSelectedDates: { // Renamed for clarity
+      type: Array,
+      default: null,
+    },
   },
-  emits: ['apply-filter', 'update:modelValueRange', 'update:modelValueDates'],
+  emits: ['apply-filter', 'update:initialSelectedRange', 'update:initialSelectedDates'],
   setup(props, { emit }) {
-    const localSelectedRange = ref(props.modelValueRange);
-    const localSelectedDates = ref(props.modelValueDates);
+    const internalSelectedRange = ref(props.initialSelectedRange);
+    const internalSelectedDates = ref(props.initialSelectedDates);
 
-    // Watch for changes from parent component
+    // Computed property to determine if DatePicker should be disabled
+    const isDatePickerDisabled = computed(() => {
+      return !(internalSelectedRange.value && internalSelectedRange.value.value === 'custom');
+    });
+
+    // Computed property to enable/disable the Apply button
+    const canApply = computed(() => {
+      if (internalSelectedRange.value && internalSelectedRange.value.value !== 'custom') {
+        return true; // Can apply immediately for non-custom ranges
+      } else if (
+        internalSelectedRange.value &&
+        internalSelectedRange.value.value === 'custom' &&
+        internalSelectedDates.value &&
+        internalSelectedDates.value.length === 2
+      ) {
+        return true; // Can apply when custom dates are selected
+      }
+      return false;
+    });
+
+    // Watchers to sync initial props (if needed)
     watch(
-      () => props.modelValueRange,
+      () => props.initialSelectedRange,
       (newVal) => {
-        localSelectedRange.value = newVal;
+        internalSelectedRange.value = newVal;
       }
     );
 
     watch(
-      () => props.modelValueDates,
+      () => props.initialSelectedDates,
       (newVal) => {
-        localSelectedDates.value = newVal;
+        internalSelectedDates.value = newVal;
       }
     );
-
-    // Watch local changes and emit updates to parent
-    watch(localSelectedRange, (newVal) => {
-      emit('update:modelValueRange', newVal);
-      if (newVal && newVal.value !== 'custom') {
-        localSelectedDates.value = null;
-      }
-    });
-
-    watch(localSelectedDates, (newVal) => {
-      emit('update:modelValueDates', newVal);
-    });
 
     function onDateRangeChange() {
-      if (localSelectedRange.value && localSelectedRange.value.value !== 'custom') {
-        localSelectedDates.value = null;
+      if (internalSelectedRange.value && internalSelectedRange.value.value !== 'custom') {
+        internalSelectedDates.value = null;
       }
     }
 
     function applyDateFilter() {
       emit('apply-filter');
+      emit('update:initialSelectedRange', internalSelectedRange.value);
+      emit('update:initialSelectedDates', internalSelectedDates.value);
     }
 
     return {
-      localSelectedRange,
-      localSelectedDates,
-      dateRanges: props.dateRanges,
+      internalSelectedRange,
+      internalSelectedDates,
+      isDatePickerDisabled,
+      canApply,
       onDateRangeChange,
       applyDateFilter,
     };
   },
 };
+
 </script>
 
 <style scoped>
-.controls-container {
-  display: flex;
-  align-items: center; /* Changed from flex-end to center */
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
+  .controls-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
 
-.select-container,
-.datepicker-container,
-.button-container {
-  display: flex;
-  flex-direction: column;
-}
+  .select-container,
+  .datepicker-container,
+  .button-container {
+    display: flex;
+    flex-direction: column;
+  }
 
-.select-container label,
-.datepicker-container label,
-.button-container label {
-  font-weight: 600;
-  color: #08294A; /* Night Sky */
-  margin-bottom: 0.5rem;
-}
+  .select-container label,
+  .datepicker-container label,
+  .button-container label {
+    font-weight: 600;
+    color: #08294A !important;
+    margin-bottom: 0.5rem;
+  }
 
-/* Adjust the label in the button container to reserve space */
-.button-container label {
-  visibility: hidden; /* Hide the label but keep the space */
-}
+  .button-container label {
+    visibility: hidden;
+  }
 
-.custom-select .p-dropdown {
-  width: 200px;
-}
+  .apply-button {
+    background-color: #FFFFFF !important;
+    color: #297FB7 !important;
+    border: 1px solid #297FB7 !important;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
 
-.custom-datepicker .p-inputwrapper {
-  width: 300px;
-}
+  .apply-button:hover {
+    background-color: #297FB7 !important;
+    color: #FFFFFF !important;
+  }
 
-.apply-button {
-  background-color: #FFFFFF !important;
-  color: #297FB7 !important;
-  border: 1px solid #297FB7 !important;
-  padding: 0.6rem 1.2rem;
-  border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  /* Removed align-self: flex-start */
-}
+  .apply-button:active {
+    background-color: #08294A !important;
+  }
 
-.apply-button:hover {
-  background-color: #297FB7 !important;
-  color: #FFFFFF !important;
-}
+  .apply-button:disabled {
+    background-color: #D3D3D3 !important; /* Light Gray for disabled state */
+    color: #A6A6A6 !important; /* Neutral Gray text */
+    cursor: not-allowed;
+  }
 
-.apply-button:active {
-  background-color: #08294A!important;
-}
+  .apply-button .pi {
+    margin-right: 0.5rem;
+  }
 
-.apply-button:disabled {
-  background-color: #D3D3D3; /* Light Gray for disabled state */
-  color: #A6A6A6; /* Neutral Gray text */
-  cursor: not-allowed;
-}
+  .custom-select .p-dropdown .custom-datepicker .p-inputtext  {
+    border: 1px solid #297FB7 !important;
+    border-radius: 4px !important;
+    color: #08294A !important;
+  }
 
-.apply-button .pi {
-  margin-right: 0.5rem;
-}
+  .custom-select .p-dropdown:focus,
+  .custom-datepicker .p-inputtext:focus {
+    border-color: #1F5F8A !important;
+    box-shadow: 0 0 0 1px #1F5F8A !important;
+  }
+
+  .custom-select .p-dropdown .p-dropdown-trigger  {
+    color: #297FB7 !important;
+  }
+
+  .custom-datepicker .p-datepicker-trigger {
+    color: #297FB7 !important;
+  }
 </style>

@@ -54,3 +54,34 @@
   --surface-900: 4 14 27;
   --surface-950: 3 9 17;
 }
+
+/* src/assets/main.css or src/styles/global.css */
+
+.custom-select {
+  --p-select-background: #ffffff;
+  --p-select-disabled-background: #f3f4f6;
+  --p-select-filled-background: #ffffff;
+  --p-select-filled-focus-background: #ffffff;
+  --p-select-border-color: #297fb7;
+  --p-select-hover-border-color: #297fb7;
+  --p-select-focus-border-color: #1f5f8a;
+  --p-select-invalid-border-color: #e53e3e;
+  --p-select-option-focus-background: #ebf4ff;
+  --p-select-option-selected-background: #3182ce;
+  --p-select-option-selected-focus-background: #2b6cb0;
+  --p-select-focus-ring-color: #1f5f8a;
+}
+
+/* Apply to all Select components */
+.p-select {
+  border-radius: 4px;
+  color: #08294a;
+}
+
+.p-select .p-dropdown-trigger {
+  color: #297fb7;
+}
+
+.p-select .p-dropdown-items-wrapper {
+  border-radius: 4px;
+}

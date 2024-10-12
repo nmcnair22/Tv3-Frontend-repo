@@ -13,14 +13,22 @@
 </template>
 
 <script setup>
+import { ArcElement, Chart as ChartJS, Legend, Tooltip } from 'chart.js';
 import Chart from 'primevue/chart';
 import { computed } from 'vue';
+
+// Register necessary Chart.js components without ChartDataLabels
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const props = defineProps({
   revenueCategories: {
     type: Array,
     default: () => [],
   },
+});
+
+const totalRevenue = computed(() => {
+  return props.revenueCategories.reduce((sum, item) => sum + item.amount, 0);
 });
 
 const chartData = computed(() => {
@@ -56,19 +64,32 @@ const chartData = computed(() => {
   };
 });
 
-// Add chartOptions with responsive settings
-const chartOptions = {
+// Define chart options without datalabels plugin
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'bottom',
+      position: 'left',
       labels: {
-        color: '#595959', // Dark Gray for legend text
+        color: '#595959',
+        font: {
+          size: 12,
+        },
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: function (tooltipItem) {
+          const label = tooltipItem.label || '';
+          const value = tooltipItem.parsed;
+          const percentage = ((value / totalRevenue.value) * 100).toFixed(2);
+          return `${label}: $${value} (${percentage}%)`;
+        },
       },
     },
   },
-};
+}));
 </script>
 
 <style scoped>
@@ -84,8 +105,9 @@ const chartOptions = {
 
 .chart-container h3 {
   margin-bottom: 1rem;
-  color: #08294A; /* Night Sky for titles */
+  color: #08294A;
   font-weight: 600;
+  font-size: 1.40rem;
 }
 
 .chart-wrapper {

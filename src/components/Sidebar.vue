@@ -1,3 +1,4 @@
+<!-- src/components/Sidebar.vue -->
 <template>
     <div class="relative flex gap-0 h-screen bg-surface-0 dark:bg-surface-950 p-6">
         <div id="app-sidebar-14" class="h-full hidden lg:block lg:static absolute left-0 top-0 py-4 pl-4 lg:p-0 z-50">
@@ -64,7 +65,9 @@
                                         <span
                                             class="leading-relaxed font-medium text-sm transition-all ml-8"
                                             :class="selectedSubNav === subItem.label ? 'text-surface-0' : 'text-surface-400 hover:text-surface-0'"
-                                        >{{ subItem.label }}</span>
+                                        >
+                                            {{ subItem.label }}
+                                        </span>
                                     </router-link>
                                 </div>
                             </li>
@@ -138,8 +141,12 @@ const navs = ref([
                 path: '/finance/balance-sheet'
             },
             {
-                label: 'Dashboard', // Add the new Financial Dashboard link
+                label: 'Dashboard', // Existing Dashboard link
                 path: '/finance/dashboard'
+            },
+            {
+                label: 'Paytrack', // <-- New Paytrack link added here
+                path: '/finance/paytrack'
             }
         ]
     },
@@ -209,3 +216,7 @@ const getActiveLinePath = (index, selectedIndex) => {
     }
 };
 </script>
+
+<style scoped>
+/* Styling remains unchanged as per your request */
+</style>

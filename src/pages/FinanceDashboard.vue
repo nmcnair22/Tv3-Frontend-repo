@@ -4,10 +4,12 @@
 
     <!-- Date Range Selector Component -->
     <DateRangeSelector
-      v-model:modelValueRange="selectedRange"
-      v-model:modelValueDates="selectedDates"
+      :initialSelectedRange="selectedRange"
+      :initialSelectedDates="selectedDates"
       :dateRanges="dateRanges"
       @apply-filter="applyDateFilter"
+      @update:initialSelectedRange="handleRangeUpdate"
+      @update:initialSelectedDates="handleDatesUpdate"
     />
 
     <!-- Loading and Error Components -->
@@ -172,7 +174,7 @@ onMounted(async () => {
     selectedRange.value = dateRanges[0]; // Default to 'Month to Date'
     selectedEndDate.value = getSelectedEndDate();
   }
-  await applyDateFilter();
+  await applyDateFilter(); // Apply initial filter
 });
 
 async function applyDateFilter() {
@@ -247,6 +249,14 @@ function parseDate(dateString) {
 function formatDisplayDate(date) {
   const options = { year: 'numeric', month: 'short', day: 'numeric' };
   return date.toLocaleDateString(undefined, options);
+}
+
+function handleRangeUpdate(newRange) {
+  selectedRange.value = newRange;
+}
+
+function handleDatesUpdate(newDates) {
+  selectedDates.value = newDates;
 }
 </script>
 

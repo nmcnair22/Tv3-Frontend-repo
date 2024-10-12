@@ -164,7 +164,7 @@ const chartOptions = computed(() => ({
   margin: 0;
   color: #08294A; /* Night Sky for titles */
   font-weight: 600;
-  font-size: 1.75rem;
+  font-size: 1.40rem;
 }
 
 /* "View All Payments" Button Styling */

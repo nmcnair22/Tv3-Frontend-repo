@@ -1,3 +1,4 @@
+<!-- src/layouts/AppLayout.vue -->
 <template>
   <div class="app-layout">
     <!-- Sidebar Component (Full height including the top) -->
@@ -5,7 +6,16 @@
 
     <div class="content-area">
       <!-- AppHeader Component (At the top of the content area, to the right of the sidebar) -->
-      <AppHeader />
+      <AppHeader>
+        <!-- Conditionally render optional components based on route metadata -->
+        <template v-if="route.meta.headerType === 'with-badge'" #optional-components>
+          <Badge :value="route.meta.headerOptions.badgeCount" severity="warning" />
+        </template>
+
+        <template v-if="route.meta.headerType === 'with-tabs'" #optional-components>
+          <TabMenu :model="route.meta.headerOptions.tabs" class="mt-2 md:mt-0" />
+        </template>
+      </AppHeader>
 
       <!-- Main content area (Router view) -->
       <div class="main-content">
@@ -17,8 +27,11 @@
 
 <script setup>
 // Import Sidebar and Header Components
+import { useRoute } from 'vue-router';
 import AppHeader from '../components/appHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
+
+const route = useRoute();
 </script>
 
 <style scoped>
@@ -51,19 +64,6 @@ import Sidebar from '../components/Sidebar.vue';
   padding: 0; /* Remove padding here */
   background-color: var(--p-surface-0); /* Make the background white */
   height: 100%; /* Make sure it fills the vertical space */
-}
-
-/* Header at the top of the content area */
-.app-header {
-  width: 100%;
-  height: 64px; /* Adjust height as necessary */
-  display: flex;
-  align-items: center;
-  margin: 0;
-  padding: 0 4px;
-  background-color: var(--p-surface-0); /* Keep header background white */
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); /* Optional shadow for separation */
-  z-index: 10; /* Keep header above the content */
 }
 
 /* Main content area, beneath the header */

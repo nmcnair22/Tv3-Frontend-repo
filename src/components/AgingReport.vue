@@ -317,42 +317,42 @@ function calculateRank(item) {
 }
 
 /* Override the default highlight color for sorted column headers */
-::v-deep .aging-table .p-datatable-thead > tr > th.p-datatable-column-sorted {
+:deep(.aging-table .p-datatable-thead > tr > th.p-datatable-column-sorted) {
   background-color: #297FB7 !important; /* Desired blue color */
   color: #FFFFFF !important; /* Ensure text is readable */
 }
 
 /* Ensure the sort icon is visible */
-::v-deep .aging-table .p-datatable-thead > tr > th.p-datatable-column-sorted .p-sortable-column-icon {
+:deep(.aging-table .p-datatable-thead > tr > th.p-datatable-column-sorted .p-sortable-column-icon) {
   color: #FFFFFF !important; /* Ensure sort icon is visible */
 }
 
 /* Override the paginator active page highlight */
-::v-deep .aging-table .p-paginator .p-paginator-page.p-highlight {
+:deep(.aging-table .p-paginator .p-paginator-page.p-highlight) {
   background-color: #297FB7 !important; /* Desired blue color */
   border-color: #297FB7 !important;
   color: #FFFFFF !important; /* Ensure text is readable */
 }
 
 /* Override paginator buttons */
-::v-deep .aging-table .p-paginator .p-paginator-page,
-::v-deep .aging-table .p-paginator .p-paginator-next,
-::v-deep .aging-table .p-paginator .p-paginator-prev {
+:deep(.aging-table .p-paginator .p-paginator-page),
+:deep(.aging-table .p-paginator .p-paginator-next),
+:deep(.aging-table .p-paginator .p-paginator-prev) {
   background-color: #FFFFFF !important;
   color: #297FB7 !important;
   border: 1px solid #297FB7 !important;
 }
 
-::v-deep .aging-table .p-paginator .p-paginator-page:hover,
-::v-deep .aging-table .p-paginator .p-paginator-next:hover,
-::v-deep .aging-table .p-paginator .p-paginator-prev:hover {
+:deep(.aging-table .p-paginator .p-paginator-page:hover),
+:deep(.aging-table .p-paginator .p-paginator-next:hover),
+:deep(.aging-table .p-paginator .p-paginator-prev:hover) {
   background-color: #297FB7 !important; /* Blue background on hover */
   color: #FFFFFF !important; /* White text/icons on hover */
 }
 
-::v-deep .aging-table .p-paginator .p-paginator-page.p-highlight:hover,
-::v-deep .aging-table .p-paginator .p-paginator-next:hover,
-::v-deep .aging-table .p-paginator .p-paginator-prev:hover {
+:deep(.aging-table .p-paginator .p-paginator-page.p-highlight:hover),
+:deep(.aging-table .p-paginator .p-paginator-next:hover),
+:deep(.aging-table .p-paginator .p-paginator-prev:hover) {
   background-color: #1F5F8A !important; /* Darker blue on hover */
   color: #FFFFFF !important;
 }

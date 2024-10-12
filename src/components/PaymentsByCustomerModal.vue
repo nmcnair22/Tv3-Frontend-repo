@@ -178,41 +178,43 @@ function formatCurrency(value) {
 /* New Styling Overrides */
 
 /* Scoped styling for the DataTable within the modal */
-::v-deep .payments-modal-table .p-datatable-thead > tr > th.p-datatable-column-sorted {
+:deep(.payments-modal-table .p-datatable-thead > tr > th.p-datatable-column-sorted) {
   background-color: #297FB7 !important; /* Desired blue color */
   color: #FFFFFF !important; /* Ensure text is readable */
 }
 
-::v-deep .payments-modal-table .p-datatable-thead > tr > th.p-datatable-column-sorted .p-sortable-column-icon {
+:deep(.payments-modal-table .p-datatable-thead > tr > th.p-datatable-column-sorted .p-sortable-column-icon) {
   color: #FFFFFF !important; /* Ensure sort icon is visible */
 }
 
 /* Override the paginator active page highlight */
-::v-deep .payments-modal-table .p-paginator .p-paginator-page.p-highlight {
+:deep(.payments-modal-table .p-paginator .p-paginator-page.p-highlight) {
   background-color: #297FB7 !important; /* Desired blue color */
   border-color: #297FB7 !important;
   color: #FFFFFF !important; /* Ensure text is readable */
 }
 
 /* Override paginator buttons */
-::v-deep .payments-modal-table .p-paginator .p-paginator-page,
-::v-deep .payments-modal-table .p-paginator .p-paginator-next,
-::v-deep .payments-modal-table .p-paginator .p-paginator-prev {
+:deep(.payments-modal-table .p-paginator .p-paginator-page),
+:deep(.payments-modal-table .p-paginator .p-paginator-next),
+:deep(.payments-modal-table .p-paginator .p-paginator-prev) {
   background-color: #FFFFFF !important; /* White background */
   color: #297FB7 !important;
   border: 1px solid #297FB7 !important;
 }
 
-::v-deep .payments-modal-table .p-paginator .p-paginator-page:hover,
-::v-deep .payments-modal-table .p-paginator .p-paginator-next:hover,
-::v-deep .payments-modal-table .p-paginator .p-paginator-prev:hover {
+/* Hover states for paginator buttons */
+:deep(.payments-modal-table .p-paginator .p-paginator-page:hover),
+:deep(.payments-modal-table .p-paginator .p-paginator-next:hover),
+:deep(.payments-modal-table .p-paginator .p-paginator-prev:hover) {
   background-color: #297FB7 !important; 
   color: #FFFFFF !important; 
 }
 
-::v-deep .payments-modal-table .p-paginator .p-paginator-page.p-highlight:hover,
-::v-deep .payments-modal-table .p-paginator .p-paginator-next:hover,
-::v-deep .payments-modal-table .p-paginator .p-paginator-prev:hover {
+/* Active hover state for highlighted paginator page */
+:deep(.payments-modal-table .p-paginator .p-paginator-page.p-highlight:hover),
+:deep(.payments-modal-table .p-paginator .p-paginator-next:hover),
+:deep(.payments-modal-table .p-paginator .p-paginator-prev:hover) {
   background-color: #1F5F8A !important; 
   color: #FFFFFF !important;
 }
@@ -245,15 +247,16 @@ function formatCurrency(value) {
 }
 
 /* Adjust the paginator next/prev buttons */
-::v-deep .payments-modal-table .p-paginator .p-paginator-prev,
-::v-deep .payments-modal-table .p-paginator .p-paginator-next {
+:deep(.payments-modal-table .p-paginator .p-paginator-prev),
+:deep(.payments-modal-table .p-paginator .p-paginator-next) {
   background-color: #FFFFFF !important; /* White background */
   color: #297FB7 !important; /* Blue text/icons */
   border: 1px solid #297FB7 !important;
 }
 
-::v-deep .payments-modal-table .p-paginator .p-paginator-prev:hover,
-::v-deep .payments-modal-table .p-paginator .p-paginator-next:hover {
+/* Hover states for paginator buttons */
+:deep(.payments-modal-table .p-paginator .p-paginator-prev:hover),
+:deep(.payments-modal-table .p-paginator .p-paginator-next:hover) {
   background-color: #297FB7 !important; /* Blue background on hover */
   color: #FFFFFF !important; /* White text/icons on hover */
 }
@@ -269,7 +272,7 @@ function formatCurrency(value) {
   color: #08294A;
 }
 
-::v-deep .payments-modal-table .p-inputtext {
+:deep(.payments-modal-table .p-inputtext) {
   border-radius: 0.25rem !important;
   padding: 0.25rem !important;
   font-size: 0.875rem !important; /* Reduced font size */
