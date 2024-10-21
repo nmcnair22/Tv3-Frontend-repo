@@ -85,3 +85,249 @@
 .p-select .p-dropdown-items-wrapper {
   border-radius: 4px;
 }
+/* Global CSS for all DataTables */
+
+/* Table container styling */
+.table-container {
+  margin-top: 2rem;
+}
+
+/* Section title used in the table area */
+.section-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #08294a; /* Night Sky */
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+}
+
+/* Table header bar for search/filter controls */
+.table-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* Global search input box */
+.global-search {
+  width: 300px;
+  padding: 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+  color: #08294a;
+}
+
+/* General table styling */
+.p-datatable {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+/* Override for sorted column headers */
+.p-datatable-thead > tr > th.p-datatable-column-sorted {
+  background-color: #297fb7 !important; /* Desired blue color */
+  color: #ffffff !important; /* Ensure text is readable */
+}
+
+/* Ensure the sort icon in sorted columns is visible */
+.p-datatable-thead > tr > th.p-datatable-column-sorted .p-sortable-column-icon {
+  color: #ffffff !important; /* Ensure sort icon is visible */
+}
+
+/* Paginator active page highlight */
+.p-paginator .p-paginator-page.p-highlight {
+  background-color: #297fb7 !important; /* Desired blue color */
+  border-color: #297fb7 !important;
+  color: #ffffff !important; /* Ensure text is readable */
+}
+
+/* Paginator buttons normal state */
+.p-paginator .p-paginator-page,
+.p-paginator .p-paginator-next,
+.p-paginator .p-paginator-prev {
+  background-color: #ffffff !important;
+  color: #297fb7 !important;
+  border: 1px solid #297fb7 !important;
+}
+
+/* Paginator buttons hover state */
+.p-paginator .p-paginator-page:hover,
+.p-paginator .p-paginator-next:hover,
+.p-paginator .p-paginator-prev:hover {
+  background-color: #297fb7 !important; /* Blue background on hover */
+  color: #ffffff !important; /* White text/icons on hover */
+}
+
+/* Paginator buttons highlight hover state */
+.p-paginator .p-paginator-page.p-highlight:hover,
+.p-paginator .p-paginator-next:hover,
+.p-paginator .p-paginator-prev:hover {
+  background-color: #1f5f8a !important; /* Darker blue on hover */
+  color: #ffffff !important;
+}
+
+/* Button styling for view history or any other action button */
+.view-history-button {
+  background-color: #ffffff !important;
+  color: #297fb7 !important;
+  border: 1px solid #297fb7 !important;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.view-history-button:hover {
+  background-color: #297fb7 !important;
+  color: #ffffff !important;
+}
+
+.view-history-button:active {
+  background-color: #08294a !important;
+}
+
+.view-history-button:disabled {
+  background-color: #d3d3d3; /* Light Gray for disabled state */
+  color: #a6a6a6; /* Neutral Gray text */
+  cursor: not-allowed;
+}
+
+/* Icons within buttons */
+.view-history-button .pi {
+  margin-right: 0.3rem;
+}
+
+/* Mobile responsiveness for search input */
+@media (max-width: 768px) {
+  .global-search {
+    width: 100%;
+  }
+}
+
+/* Global Button Styles */
+
+/* Container for buttons */
+.button-container {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Label for buttons, select, and datepicker components */
+.select-container label,
+.datepicker-container label,
+.button-container label {
+  font-weight: 600;
+  color: #08294a !important; /* Night Sky color */
+  margin-bottom: 0.5rem;
+}
+
+/* Hide the button labels if necessary */
+.button-container label {
+  visibility: hidden;
+}
+
+/* General button styling */
+.p-button {
+  background-color: #ffffff !important;
+  color: #297fb7 !important; /* Primary blue color */
+  border: 1px solid #297fb7 !important;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+/* Hover state for buttons */
+.p-button:hover {
+  background-color: #297fb7 !important;
+  color: #ffffff !important; /* White text on hover */
+}
+
+/* Active state for buttons */
+.p-button:active {
+  background-color: #08294a !important; /* Darker blue */
+}
+
+/* Disabled state for buttons */
+.p-button:disabled {
+  background-color: #d3d3d3 !important; /* Light Gray for disabled state */
+  color: #a6a6a6 !important; /* Neutral Gray text */
+  cursor: not-allowed;
+}
+
+/* Icon inside buttons */
+.p-button .pi {
+  margin-right: 0.5rem;
+}
+
+/* Custom styling for selected dropdown option */
+.p-select-option.p-select-option-selected {
+  background-color: #297fb7 !important; /* Blue background for selected option */
+  color: #ffffff !important; /* White text */
+  border-color: #297fb7 !important;
+}
+
+/* Optional: Hover state for better visual feedback */
+.p-select-option.p-select-option-selected:hover {
+  background-color: #1f5f8a !important; /* Darker blue on hover */
+  color: #ffffff !important;
+}
+
+/* Targeting the select component when it's active or focused to change the border color */
+.p-select.p-inputwrapper-filled {
+  border-color: #297fb7 !important;
+}
+
+/* Ensure the blue border on focus */
+.p-select.p-component:selected,
+.p-select.p-component.p-inputwrapper-filled:focus {
+  border-color: #297fb7 !important;
+  box-shadow: 0 0 0 0.2rem rgba(41, 127, 183, 0.25) !important;
+}
+
+/* Change the border color on hover */
+.p-select.p-component:hover {
+  border-color: #297fb7 !important; /* Blue border on hover */
+}
+
+/* Target the dropdown overlay when it is active or focused to change the border color */
+.p-select-overlay.p-component {
+  border-color: #297fb7 !important; /* Blue border */
+}
+/* Target the filter operator dropdown */
+.p-datatable-filter-operator.p-component {
+  border-color: #297fb7 !important; /* Blue border */
+}
+
+/* Change the border color on focus */
+.p-datatable-filter-operator.p-component:focus {
+  border-color: #297fb7 !important; /* Blue border on focus */
+  box-shadow: 0 0 0 0.2rem rgba(41, 127, 183, 0.25) !important; /* Optional blue glow effect */
+}
+
+/* Change the border color and background of the selected option */
+.p-datatable-filter-operator .p-select-option.p-select-option-selected {
+  background-color: #297fb7 !important; /* Blue background for selected option */
+  color: #ffffff !important; /* White text */
+  border-color: #297fb7 !important; /* Blue border for selected option */
+}
+
+/* Global Tabs Styling */
+/* Override for active tab link */
+.p-tabmenu-item-active .p-tabmenu-item-link {
+  --p-tabmenu-item-active-background: #297fb7 !important; /* Blue background */
+  --p-tabmenu-item-active-border-color: #297fb7 !important; /* Blue border */
+  --p-tabmenu-item-active-color: #ffffff !important; /* White text */
+  background: var(--p-tabmenu-item-active-background) !important;
+  border-color: var(--p-tabmenu-item-active-border-color) !important;
+  color: var(--p-tabmenu-item-active-color) !important;
+}

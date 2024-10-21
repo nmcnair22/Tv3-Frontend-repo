@@ -26,6 +26,7 @@
   <script setup>
   import { useRoute } from 'vue-router';
   
+  
   // Get the current route
   const route = useRoute();
   </script>

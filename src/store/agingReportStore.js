@@ -1,21 +1,33 @@
 // src/store/agingReportStore.js
 import axios from 'axios';
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { useDateStore } from './dateStore'; // Import the shared date store
 
 export const useAgingReportStore = defineStore('agingReportStore', () => {
     const agingReport = ref([]);
     const isLoading = ref(false);
     const error = ref(null);
+    const dateStore = useDateStore();  // Access the date store
 
-    async function fetchAgingReport(asOfDate) {
+    // Use a computed property to get the selected end date from the date store
+    const selectedEndDate = computed(() => dateStore.endDate);
+
+    async function fetchAgingReport() {
+        if (!selectedEndDate.value) {
+            error.value = 'No end date selected.';
+            return;
+        }
+
         isLoading.value = true;
         error.value = null;
+
         try {
             const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
             const response = await axios.get(`${backendUrl}/financial-dashboard/aging-report`, {
-                params: { asOfDate },
+                params: { asOfDate: selectedEndDate.value },
             });
+
             if (response.data) {
                 agingReport.value = response.data;
             } else {

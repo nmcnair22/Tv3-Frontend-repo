@@ -7,9 +7,7 @@
         <span v-if="index > 0" class="px-1">
           <i class="pi pi-angle-right text-surface-500 dark:text-surface-300 leading-normal"></i>
         </span>
-        <span
-          class="text-surface-500 dark:text-surface-300 no-underline leading-normal cursor-pointer"
-        >
+        <span class="text-surface-500 dark:text-surface-300 no-underline leading-normal cursor-pointer">
           {{ crumb }}
         </span>
       </li>
@@ -22,16 +20,25 @@
         {{ route.meta.title }}
       </span>
 
-      <!-- Optional Components Slot -->
-      <div v-if="route.meta.headerType === 'with-tabs'" class="w-full md:w-auto">
-        <TabMenu :model="route.meta.headerOptions.tabs" class="custom-tabmenu" />
+      <!-- Optional Components Slot: Tab Menu -->
+      <div v-if="tabs.length > 0" class="w-full md:w-auto">
+        <TabMenu
+          :model="tabs"
+          class="custom-tabmenu"
+          :activeItem="activeTab"
+          @tab-change="onTabChange"
+        />
       </div>
 
+      <div v-else>
+        <!-- Fallback rendering when no tabs are available -->
+        <p class="text-red-500">No tabs available for this route</p>
+      </div>
+
+      <!-- Badge Rendering -->
       <div v-if="route.meta.headerType === 'with-badge'" class="mt-2 md:mt-0">
         <Badge :value="route.meta.headerOptions.badgeCount" severity="warning" />
       </div>
-
-      <!-- Add more conditional components as needed -->
     </div>
   </div>
 </template>
@@ -39,18 +46,57 @@
 <script setup>
 import Badge from 'primevue/badge';
 import TabMenu from 'primevue/tabmenu';
-import { useRoute } from 'vue-router';
+import { onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
+const router = useRouter();
 
-// Example tabs data if needed
-// const tabs = ref([
-//   { label: 'Dashboard', icon: 'pi pi-fw pi-home' },
-//   { label: 'Customers', icon: 'pi pi-fw pi-users' },
-//   { label: 'Projects', icon: 'pi pi-fw pi-chart-bar' },
-//   { label: 'Messages', icon: 'pi pi-fw pi-inbox' },
-//   { label: 'Settings', icon: 'pi pi-fw pi-cog' }
-// ]);
+// Retrieve the tabs from the route metadata
+const tabs = ref(route.meta.headerOptions?.tabs || []);
+const activeTab = ref(tabs.value[0] || null);
+
+// Debugging: Log route.meta and tabs
+console.log('Route meta:', route.meta);
+console.log('Tabs initialized:', tabs.value);
+
+// Handle tab change and navigate
+const onTabChange = (event) => {
+  // Debugging: Log the event and check its properties
+  console.log('Tab change event:', event);
+
+  const newTab = tabs.value[event.index];  // Use event.index to access the correct tab
+
+  // Debugging: Log the newTab based on the event index
+  console.log('New tab:', newTab);
+
+  if (newTab && newTab.route) {
+    activeTab.value = newTab;
+    console.log('Navigating to:', newTab.route);
+    router.push(newTab.route);
+  } else {
+    console.error('Tab does not have a valid route:', newTab);
+  }
+};
+
+// Ensure the active tab is correctly set when the route changes
+watch(route, () => {
+  console.log('Route changed:', route.path);
+
+  // Re-fetch tabs when route changes
+  tabs.value = route.meta.headerOptions?.tabs || [];
+  console.log('Updated tabs:', tabs.value);
+
+  // Update active tab based on the current route
+  const currentTab = tabs.value.find(tab => tab.route === route.path);
+  activeTab.value = currentTab || tabs.value[0];
+  console.log('Active tab set to:', activeTab.value);
+});
+
+// Mounted hook for additional debugging
+onMounted(() => {
+  console.log('AppHeader component mounted');
+});
 </script>
 
 <style scoped>
@@ -92,6 +138,7 @@ const route = useRoute();
 
 .mb-2 {
   margin-bottom: 0.5rem;
+  padding-right: 3rem;
 }
 
 .mt-2 {
@@ -126,46 +173,6 @@ const route = useRoute();
   .mt-2 {
     margin-top: 0;
   }
-}
-
-/* Custom Styling for TabMenu */
-:deep(.custom-tabmenu) {
-  --tabmenu-active-color: #FFFFFF; /* Active tab text color */
-  --tabmenu-inactive-color: #297FB7; /* Inactive tab text color */
-  --tabmenu-active-bg: #297FB7; /* Active tab background */
-  --tabmenu-inactive-bg: #FFFFFF; /* Inactive tab background */
-  --tabmenu-border-color: #297FB7; /* Tab border color */
-}
-
-:deep(.custom-tabmenu .p-tabmenu-nav) {
-  background-color: #FFFFFF; /* TabMenu background */
-  border-bottom: 2px solid #297FB7; /* Bottom border */
-}
-
-:deep(.custom-tabmenu .p-tabmenu-nav .p-tabmenuitem) {
-  color: #297FB7; /* Inactive tab text color */
-  background-color: #FFFFFF; /* Inactive tab background */
-  border: 1px solid #297FB7; /* Inactive tab border */
-  border-bottom: none; /* Remove bottom border to connect with TabMenu nav */
-  border-radius: 4px 4px 0 0; /* Rounded top corners */
-  padding: 0.5rem 1rem; /* Padding for tabs */
-  margin-right: 0.25rem; /* Space between tabs */
-  transition: background-color 0.3s, color 0.3s;
-}
-
-:deep(.custom-tabmenu .p-tabmenu-nav .p-tabmenuitem.p-highlight) {
-  color: #FFFFFF; /* Active tab text color */
-  background-color: #297FB7; /* Active tab background */
-  border-color: #297FB7; /* Active tab border */
-}
-
-:deep(.custom-tabmenu .p-tabmenu-nav .p-tabmenuitem:hover) {
-  background-color: #1F5F8A; /* Hover background for tabs */
-  color: #FFFFFF; /* Hover text color */
-}
-
-:deep(.custom-tabmenu .p-tabmenu-nav .p-tabmenuitem.p-highlight:hover) {
-  background-color: #1F5F8A; /* Active tab hover background */
 }
 
 /* Optional: Responsive Adjustments */

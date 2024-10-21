@@ -146,7 +146,7 @@ const navs = ref([
             },
             {
                 label: 'Paytrack', // <-- New Paytrack link added here
-                path: '/finance/paytrack'
+                path: '/finance/paytrack/overview'
             }
         ]
     },

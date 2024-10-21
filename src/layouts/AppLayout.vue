@@ -41,7 +41,7 @@ const route = useRoute();
   height: 100vh; /* Ensure it fills the entire viewport height */
   margin: 0; /* Remove any default margin */
   padding: 0; /* Remove any default padding */
-  overflow: hidden; /* Prevent overflow when using fixed elements */
+  overflow: auto; /* Allow content to scroll */
 }
 
 /* Sidebar should be fixed and take the full height */
@@ -72,5 +72,18 @@ const route = useRoute();
   padding: 16px; /* Optional padding for main content */
   overflow-y: auto;
   background-color: var(--p-surface-0); /* Ensure background is white for the content */
+}
+
+/* Media queries for mobile responsiveness */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%; /* Sidebar takes full width on smaller screens */
+    height: auto; /* Adjust height for smaller screens */
+  }
+
+  .content-area {
+    margin-left: 0; /* Adjust for full-width sidebar on mobile */
+    padding: 0;
+  }
 }
 </style>

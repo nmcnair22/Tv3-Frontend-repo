@@ -3,114 +3,207 @@
   <Dialog
     v-model:visible="visible"
     @hide="onHide"
-    header="All Payments by Customer"
+    header="Payments by Customer"
     :modal="true"
-    :style="{ width: '50vw', padding: '1.5rem' }"
-    :breakpoints="{ '960px': '90vw' }"
+    :style="{ width: '70vw', padding: '1.5rem' }"
+    :breakpoints="{ '960px': '95vw' }"
   >
-    <DataTable
-      v-model:filters="filters"
-      :value="formattedPaymentsData"
-      paginator
-      :rows="10"
-      :scrollable="true"
-      scrollHeight="400px"
-      stripedRows
-      filterDisplay="menu"
-      :globalFilterFields="['customer', 'formattedAmount']"
-      paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-      currentPageReportTemplate="{first} to {last} of {totalRecords}"
-      :rowsPerPageOptions="[5, 10, 20, 50]"
-      tableStyle="min-width: 30rem; width: 100%;"
-      class="payments-modal-table"
-    >
-      <template #header>
-        <div class="flex justify-between items-center mb-3">
-          <Button
-            type="button"
-            icon="pi pi-filter-slash"
-            label="Clear"
-            outlined
-            class="clear-filters-button"
-            @click="clearFilters"
-          />
-          <InputText
-            v-model="filters['global'].value"
-            placeholder="Keyword Search"
-            class="global-search-input"
-          />
-        </div>
-      </template>
-      <template #empty> No payments found. </template>
-      <template #loading> Loading payments data. Please wait. </template>
-      <Column
-        field="customer"
-        header="Customer Name"
-        sortable
-        style="min-width: 12rem"
+    <div class="card">
+      <!-- Table Configuration -->
+      <DataTable
+        v-model:filters="filters"
+        :value="paymentsData"
+        stripedRows
+        paginator
+        showGridlines
+        :rows="10"
+        dataKey="customer"
+        filterDisplay="menu"
+        :loading="loading"
+        :globalFilterFields="['customer', 'amount']"
       >
-        <template #body="{ data }">
-          {{ data.customer }}
+        <!-- Table Header with Search -->
+        <template #header>
+          <div class="flex justify-between">
+            <Button
+              type="button"
+              icon="pi pi-filter-slash"
+              label="Clear"
+              outlined
+              @click="clearFilter"
+            />
+            <IconField>
+              <InputIcon>
+                <i class="pi pi-search" />
+              </InputIcon>
+              <InputText v-model="filters['global'].value" placeholder="Keyword Search" />
+            </IconField>
+          </div>
         </template>
-        <template #filter="{ filterModel, filterCallback }">
-          <InputText
-            v-model="filterModel.value"
-            @input="filterCallback()"
-            placeholder="Search by Customer Name"
-            class="column-filter-input"
-          />
-        </template>
-      </Column>
-      <Column
-        field="formattedAmount"
-        header="Payment Amount (USD)"
-        sortable
-        style="min-width: 10rem; text-align: right;"
-      >
-        <template #body="{ data }">
-          {{ data.formattedAmount }}
-        </template>
-        <template #filter="{ filterModel, filterCallback }">
-          <InputText
-            v-model="filterModel.value"
-            @input="filterCallback()"
-            placeholder="Search by Amount"
-            class="column-filter-input"
-          />
-        </template>
-      </Column>
-    </DataTable>
+
+        <!-- Customer Column -->
+        <Column field="customer" header="Customer Name" sortable style="min-width: 12rem">
+          <template #body="{ data }">
+            {{ data.customer }}
+          </template>
+          <template #filter="{ filterModel }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              placeholder="Search by customer"
+            />
+          </template>
+        </Column>
+
+        <!-- Payment Amount Column -->
+        <Column
+          header="Payment Amount (USD)"
+          field="amount"
+          sortable
+          filterField="amount"
+          dataType="numeric"
+          style="min-width: 10rem; text-align: right;"
+        >
+          <template #body="{ data }">
+            <!-- Use getCustomerKey function -->
+            <div v-if="data" :key="data.customer">
+              <span class="payment-amount" @click="togglePopover($event, data)">
+                {{ formatCurrency(data.amount) }}
+              </span>
+
+              <!-- Popover Component -->
+              <Popover
+                :ref="el => { popoverRefs[getCustomerKey(data.customer)] = el }"
+                :dismissable="true"
+                appendTo="body"
+              >
+                <div class="popover-content">
+                  <h4>Payments for {{ data.customer }}</h4>
+                  <!-- Inner DataTable -->
+                  <DataTable
+                    :value="data.payments"
+                    :paginator="true"
+                    :rows="5"
+                    class="payments-table"
+                  >
+                  <Column field="postingDate" header="Date" :body="formatDate" />
+                  <Column field="amount" header="Amount">
+                    <template #body="{ data }">
+                      {{ formatCurrency(data.amount) }}
+                    </template>
+                  </Column>
+                  <Column field="documentNo" header="Document No" />
+                  <!-- Add more columns as needed -->
+                </DataTable>
+                </div>
+              </Popover>
+            </div>
+          </template>
+          <template #filter="{ filterModel }">
+            <InputNumber
+              v-model="filterModel.value"
+              mode="currency"
+              currency="USD"
+              locale="en-US"
+              placeholder="Filter by amount"
+            />
+          </template>
+        </Column>
+      </DataTable>
+    </div>
   </Dialog>
 </template>
 
 <script setup>
+import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
+import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
-import { computed, ref, watch } from 'vue';
+import Popover from 'primevue/popover';
+import { onMounted, reactive, ref, watch } from 'vue';
 
+// Define props and ref variables
 const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false,
-  },
-  paymentsData: {
-    type: Array,
-    default: () => [],
-  },
+  visible: Boolean,
+  paymentsData: Array, // This should be paymentsByCustomer from inflowsData
 });
-
 const emit = defineEmits(['update:visible']);
-
 const visible = ref(props.visible);
-const filters = ref({
-  global: { value: null },
-  customer: { value: null },
-  formattedAmount: { value: null },
-}); // Initialize filters for global search and individual columns
+const loading = ref(false);
 
+// Initialize filters
+const filters = ref();
+const initFilters = () => {
+  filters.value = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    customer: {
+      operator: FilterOperator.AND,
+      constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }],
+    },
+    amount: {
+      operator: FilterOperator.AND,
+      constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+    },
+  };
+};
+
+// Clear filters method
+const clearFilter = () => {
+  initFilters();
+};
+
+// Format currency for the amount column
+const formatCurrency = (value) => {
+  let amount;
+
+  if (typeof value === 'object' && value !== null && value.amount !== undefined) {
+    // If value is an object with 'amount' property
+    amount = value.amount;
+  } else {
+    // Assume value is a numerical amount
+    amount = value;
+  }
+
+  // Convert amount to a number
+  const numericAmount = parseFloat(amount);
+  if (isNaN(numericAmount)) return '';
+
+  return numericAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+};
+
+// Format date
+const formatDate = (data) => {
+  if (!data || !data.postingDate) return '';
+  const date = new Date(data.postingDate);
+  return date.toLocaleDateString('en-US');
+};
+
+// Popover references
+const popoverRefs = reactive({});
+
+// Function to compute customerKey
+const getCustomerKey = (customerName) => {
+  return customerName.replace(/\s+/g, '_');
+};
+
+// Toggle Popover
+const togglePopover = (event, data) => {
+  const customerKey = getCustomerKey(data.customer);
+  const popoverRef = popoverRefs[customerKey];
+
+  if (popoverRef) {
+    popoverRef.toggle(event);
+  } else {
+    console.error(`Popover ref not found for customer: ${customerKey}`);
+  }
+};
+
+// Watch for modal visibility changes
 watch(
   () => props.visible,
   (newVal) => {
@@ -118,185 +211,27 @@ watch(
   }
 );
 
-function onHide() {
+const onHide = () => {
   emit('update:visible', false);
-}
+};
 
-function closeModal() {
-  visible.value = false;
-  emit('update:visible', false);
-}
-
-function clearFilters() {
-  filters.value = {
-    global: { value: null },
-    customer: { value: null },
-    formattedAmount: { value: null },
-  };
-}
-
-// Computed property to format payment amounts before rendering
-const formattedPaymentsData = computed(() =>
-  props.paymentsData.map((payment) => ({
-    ...payment,
-    formattedAmount: formatCurrency(payment.amount),
-  }))
-);
-
-// Format currency values
-function formatCurrency(value) {
-  if (value === null || value === undefined) return '-';
-  const amount = parseFloat(value);
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
-}
+// On component mount, initialize filters
+onMounted(() => {
+  initFilters();
+});
 </script>
 
 <style scoped>
-/* Existing Styles (Preserved) */
-
-/* Compact and cleaner design for the modal */
-.p-dialog {
-  padding: 0.75rem;
-}
-.p-datatable {
-  font-size: 0.85rem;
-}
-.p-datatable-thead > tr > th {
-  padding: 0.5rem;
-}
-.p-datatable-tbody > tr > td {
-  padding: 0.5rem;
-}
-.p-inputtext {
-  border-radius: 0.25rem;
-  padding: 0.25rem;
-}
-
-/* New Styling Overrides */
-
-/* Scoped styling for the DataTable within the modal */
-:deep(.payments-modal-table .p-datatable-thead > tr > th.p-datatable-column-sorted) {
-  background-color: #297FB7 !important; /* Desired blue color */
-  color: #FFFFFF !important; /* Ensure text is readable */
-}
-
-:deep(.payments-modal-table .p-datatable-thead > tr > th.p-datatable-column-sorted .p-sortable-column-icon) {
-  color: #FFFFFF !important; /* Ensure sort icon is visible */
-}
-
-/* Override the paginator active page highlight */
-:deep(.payments-modal-table .p-paginator .p-paginator-page.p-highlight) {
-  background-color: #297FB7 !important; /* Desired blue color */
-  border-color: #297FB7 !important;
-  color: #FFFFFF !important; /* Ensure text is readable */
-}
-
-/* Override paginator buttons */
-:deep(.payments-modal-table .p-paginator .p-paginator-page),
-:deep(.payments-modal-table .p-paginator .p-paginator-next),
-:deep(.payments-modal-table .p-paginator .p-paginator-prev) {
-  background-color: #FFFFFF !important; /* White background */
-  color: #297FB7 !important;
-  border: 1px solid #297FB7 !important;
-}
-
-/* Hover states for paginator buttons */
-:deep(.payments-modal-table .p-paginator .p-paginator-page:hover),
-:deep(.payments-modal-table .p-paginator .p-paginator-next:hover),
-:deep(.payments-modal-table .p-paginator .p-paginator-prev:hover) {
-  background-color: #297FB7 !important; 
-  color: #FFFFFF !important; 
-}
-
-/* Active hover state for highlighted paginator page */
-:deep(.payments-modal-table .p-paginator .p-paginator-page.p-highlight:hover),
-:deep(.payments-modal-table .p-paginator .p-paginator-next:hover),
-:deep(.payments-modal-table .p-paginator .p-paginator-prev:hover) {
-  background-color: #1F5F8A !important; 
-  color: #FFFFFF !important;
-}
-
-/* "Clear" Button Styling */
-.clear-filters-button {
-  background-color: #FFFFFF !important;
-  color: #297FB7 !important;
-  border: 1px solid #297FB7 !important;
-  padding: 0.6rem 1.2rem;
-  border-radius: 4px;
-  font-weight: bold;
-  font-size: 0.875rem; /* Reduced font size */
+.payment-amount {
+  color: #297FB7;
   cursor: pointer;
+  text-decoration: underline;
 }
-
-.clear-filters-button:hover {
-  background-color: #297FB7 !important;
-  color: #FFFFFF !important;
+.popover-content {
+  padding: 1rem;
+  width: 400px;
 }
-
-.clear-filters-button:active {
-  background-color: #08294A!important;
-}
-
-.clear-filters-button:disabled {
-  background-color: #D3D3D3 !important; /* Light Gray for disabled state */
-  color: #A6A6A6 !important; /* Neutral Gray text */
-  cursor: not-allowed;
-}
-
-/* Adjust the paginator next/prev buttons */
-:deep(.payments-modal-table .p-paginator .p-paginator-prev),
-:deep(.payments-modal-table .p-paginator .p-paginator-next) {
-  background-color: #FFFFFF !important; /* White background */
-  color: #297FB7 !important; /* Blue text/icons */
-  border: 1px solid #297FB7 !important;
-}
-
-/* Hover states for paginator buttons */
-:deep(.payments-modal-table .p-paginator .p-paginator-prev:hover),
-:deep(.payments-modal-table .p-paginator .p-paginator-next:hover) {
-  background-color: #297FB7 !important; /* Blue background on hover */
-  color: #FFFFFF !important; /* White text/icons on hover */
-}
-
-/* Input Text Styling */
-.global-search-input,
-.column-filter-input {
-  width: 25%;
-  padding: 0.5rem;
-  border: 1px solid #E0E0E0;
-  border-radius: 4px;
-  font-size: 1rem;
-  color: #08294A;
-}
-
-:deep(.payments-modal-table .p-inputtext) {
-  border-radius: 0.25rem !important;
-  padding: 0.25rem !important;
-  font-size: 0.875rem !important; /* Reduced font size */
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .global-search-input,
-  .column-filter-input {
-    width: 100%;
-  }
-
-  .chart-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .clear-filters-button {
-    margin-top: 0.5rem;
-    width: 100%;
-  }
-
-  .section-title {
-    font-size: 1.5rem;
-  }
+.payments-table {
+  margin-top: 0.5rem;
 }
 </style>
