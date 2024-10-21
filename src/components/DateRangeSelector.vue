@@ -1,4 +1,3 @@
-<!-- src/components/DateRangeSelector.vue -->
 <template>
   <div class="controls-container">
     <div class="select-container">
@@ -26,9 +25,8 @@
         class="custom-datepicker"
       />
     </div>
-    <!-- Wrap the Button in a div for consistent structure -->
     <div class="button-container">
-      <label>&nbsp;</label> <!-- Empty label for alignment -->
+      <label>&nbsp;</label> 
       <Button
         label="Apply"
         @click="applyDateFilter"
@@ -53,16 +51,15 @@ export default {
     Button,
   },
   props: {
-    // Removed modelValueRange and modelValueDates props to decouple immediate updates
     dateRanges: {
       type: Array,
       required: true,
     },
-    initialSelectedRange: { // Renamed for clarity
+    initialSelectedRange: {
       type: Object,
       default: null,
     },
-    initialSelectedDates: { // Renamed for clarity
+    initialSelectedDates: {
       type: Array,
       default: null,
     },
@@ -72,27 +69,24 @@ export default {
     const internalSelectedRange = ref(props.initialSelectedRange);
     const internalSelectedDates = ref(props.initialSelectedDates);
 
-    // Computed property to determine if DatePicker should be disabled
     const isDatePickerDisabled = computed(() => {
       return !(internalSelectedRange.value && internalSelectedRange.value.value === 'custom');
     });
 
-    // Computed property to enable/disable the Apply button
     const canApply = computed(() => {
       if (internalSelectedRange.value && internalSelectedRange.value.value !== 'custom') {
-        return true; // Can apply immediately for non-custom ranges
+        return true;
       } else if (
         internalSelectedRange.value &&
         internalSelectedRange.value.value === 'custom' &&
         internalSelectedDates.value &&
         internalSelectedDates.value.length === 2
       ) {
-        return true; // Can apply when custom dates are selected
+        return true;
       }
       return false;
     });
 
-    // Watchers to sync initial props (if needed)
     watch(
       () => props.initialSelectedRange,
       (newVal) => {
@@ -129,7 +123,6 @@ export default {
     };
   },
 };
-
 </script>
 
 <style scoped>

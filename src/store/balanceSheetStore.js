@@ -1,5 +1,4 @@
 // src/store/balanceSheetStore.js
-
 import axios from 'axios';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
@@ -17,7 +16,15 @@ export const useBalanceSheetStore = defineStore('balanceSheetStore', () => {
             const response = await axios.get('http://localhost:3000/balance-sheet', {
                 params: { date },
             });
-            balanceSheet.value = response.data.value || [];
+
+            if (response.data && Array.isArray(response.data.value)) {
+                balanceSheet.value = response.data.value;
+                console.log(`[${new Date().toLocaleTimeString()}] Fetched balance sheet data:`, balanceSheet.value);
+            } else {
+                console.warn('Unexpected balance sheet data format:', response.data);
+                balanceSheet.value = [];
+            }
+
         } catch (err) {
             console.error('Error fetching balance sheet:', err);
             error.value = 'Failed to load balance sheet data.';

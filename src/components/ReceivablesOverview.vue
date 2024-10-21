@@ -21,6 +21,11 @@
       <h3>Total Payments Received</h3>
       <p>{{ formatCurrency(inflowsData.totalPaymentsReceived) }}</p>
     </div>
+    <!-- New Stat Card for Total Credits -->
+    <div class="stat-card">
+      <h3>Total Credits</h3>
+      <p>{{ formatCurrency(inflowsData.totalCredits) }}</p>
+    </div>
   </div>
 </template>
 
@@ -58,7 +63,7 @@ function formatCurrency(value) {
   background-color: #FFFFFF; /* White background for a clean look */
   padding: 1rem;
   border-radius: 8px;
-  flex: 1 1 calc(20% - 1rem);
+  flex: 1 1 calc(16.66% - 1rem);
   min-width: 150px;
   text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
@@ -91,7 +96,7 @@ function formatCurrency(value) {
 /* Responsive Design */
 @media (max-width: 1200px) {
   .stat-card {
-    flex: 1 1 calc(25% - 1rem); /* Adjust card width on medium screens */
+    flex: 1 1 calc(33.333% - 1rem); /* Adjust card width on medium screens */
   }
 }
 

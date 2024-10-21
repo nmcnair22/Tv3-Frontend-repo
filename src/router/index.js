@@ -8,7 +8,8 @@ import BalanceSheet from '../pages/BalanceSheet.vue';
 import CashFlow from '../pages/CashFlow.vue';
 import FinanceDashboard from '../pages/FinanceDashboard.vue';
 import Income from '../pages/Income.vue';
-import Paytrack from '../pages/Paytrack.vue'; // <-- Import Paytrack component
+import Paytrack from '../pages/Paytrack.vue'; // Main Paytrack Component
+import PaytrackOverview from '../pages/PaytrackOverview.vue'; // Paytrack Overview Page
 
 // Create placeholder components
 const Placeholder = { template: '<div>Coming Soon...</div>' };
@@ -66,7 +67,7 @@ const routes = [
   },
   {
     path: '/finance/paytrack',
-    component: Paytrack, // <-- Added Paytrack component
+    component: Paytrack, // <-- Main Paytrack component
     name: 'Paytrack',
     meta: {
       title: 'Paytrack',
@@ -76,11 +77,43 @@ const routes = [
         showTabs: true,
         tabs: [
           { label: 'Overview', icon: 'pi pi-fw pi-chart-bar', route: '/finance/paytrack/overview' },
-          { label: 'Details', icon: 'pi pi-fw pi-list', route: '/finance/paytrack/details' },
-          // Add more tabs as needed
+          { label: 'Customers', icon: 'pi pi-fw pi-list', route: '/finance/paytrack/customers' },
+          { label: 'Invoices', icon: 'pi pi-file-o', route: '/finance/paytrack/invoices' },
         ],
       },
     },
+    children: [
+      {
+        path: 'overview', // Paytrack Overview
+        component: PaytrackOverview,
+        name: 'PaytrackOverview',
+        meta: {
+          title: 'Paytrack Overview',
+          breadcrumb: ['Finance', 'Paytrack', 'Overview'],
+          headerType: 'with-tabs', // Keep the tabs for all Paytrack routes
+        },
+      },
+      {
+        path: 'customers', // Paytrack Customers
+        component: Placeholder, // Replace this with the actual Customers component later
+        name: 'PaytrackCustomers',
+        meta: {
+          title: 'Paytrack Customers',
+          breadcrumb: ['Finance', 'Paytrack', 'Customers'],
+          headerType: 'with-tabs',
+        },
+      },
+      {
+        path: 'invoices', // Paytrack Invoices
+        component: Placeholder, // Replace this with the actual Invoices component later
+        name: 'PaytrackInvoices',
+        meta: {
+          title: 'Paytrack Invoices',
+          breadcrumb: ['Finance', 'Paytrack', 'Invoices'],
+          headerType: 'with-tabs',
+        },
+      },
+    ],
   },
   {
     path: '/streamline/dashboard',

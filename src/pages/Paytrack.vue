@@ -1,13 +1,13 @@
 <!-- src/pages/Paytrack.vue -->
 <template>
   <div class="paytrack-page">
-    <!-- Child components will be rendered here -->
+    <!-- Render child routes for Paytrack (Overview, Customers, Invoices, etc.) -->
     <router-view />
   </div>
 </template>
 
 <script setup>
-  // Any specific logic for Paytrack can go here
+// No additional logic is needed at the moment for the shell component.
 </script>
 
 <style scoped>

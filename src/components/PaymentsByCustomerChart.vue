@@ -25,6 +25,7 @@
     <!-- Include the Modal Component -->
     <PaymentsByCustomerModal
       :visible.sync="isModalVisible"
+      @update:visible="isModalVisible = $event"
       :paymentsData="props.paymentsByCustomer"
     />
   </div>

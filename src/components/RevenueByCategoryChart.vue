@@ -83,13 +83,21 @@ const chartOptions = computed(() => ({
         label: function (tooltipItem) {
           const label = tooltipItem.label || '';
           const value = tooltipItem.parsed;
+
+          // Using Intl.NumberFormat to format value as USD currency with commas
+          const formattedValue = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+          }).format(value);
+
           const percentage = ((value / totalRevenue.value) * 100).toFixed(2);
-          return `${label}: $${value} (${percentage}%)`;
+          return `${label}: ${formattedValue} (${percentage}%)`;
         },
       },
     },
   },
 }));
+
 </script>
 
 <style scoped>

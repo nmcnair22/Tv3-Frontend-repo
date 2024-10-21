@@ -12,57 +12,72 @@
     closeOnEscape
     class="bg-white p-6 rounded-lg shadow-lg"
   >
-    <template v-if="payments.length > 0">
-      <!-- Wrap DataTable in a div with 'payment-table' class -->
-      <div class="payment-table">
-        <DataTable
-          :value="payments"
-          paginator
-          :rows="10"
-          class="min-w-full bg-white"
-          :sortField="'date'"
-          :sortOrder="-1"
-        >
-          <Column
-            field="invoiceNumber"
-            header="Invoice Number"
-            sortable
-            class="text-left px-4 py-2 border-b"
+    <div v-if="isLoading" class="flex justify-center items-center py-4">
+      <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+    </div>
+    <div v-else>
+      <template v-if="error">
+        <div class="text-center text-red-500 py-4">
+          {{ error }}
+        </div>
+      </template>
+      <template v-else-if="payments.length > 0">
+        <!-- Wrap DataTable in a div with 'payment-table' class -->
+        <div class="payment-table">
+          <DataTable
+            :value="payments"
+            paginator
+            :rows="10"
+            class="min-w-full bg-white"
+            :loading="isLoading"
+            :sortField="'paymentDate'"
+            :sortOrder="-1"
           >
-            <template #body="{ data }">
-              <Button
-                label=""
-                class="apply-button p-button-link"
-                @click="openInvoiceModal(data.invoiceNumber)"
-              >
-                {{ data.invoiceNumber }}
-              </Button>
-            </template>
-          </Column>
-          <Column
-            field="formattedDate"
-            header="Payment Date"
-            sortable
-            class="text-left px-4 py-2 border-b"
-          ></Column>
-          <Column
-            field="amount"
-            header="Amount"
-            sortable
-            class="text-right px-4 py-2 border-b"
-          >
-            <template #body="{ data }">
-              {{ formatCurrency(data.amount) }}
-            </template>
-          </Column>
-        </DataTable>
-      </div>
-    </template>
-    <template v-else>
-      <div class="text-center text-gray-500 py-4">
-        No payments found for this customer in the last 6 months.
-      </div>
-    </template>
+            <Column
+              field="invoiceNumber"
+              header="Invoice Number"
+              sortable
+              class="text-left px-4 py-2 border-b"
+            >
+              <template #body="{ data }">
+                <Button
+                  label=""
+                  class="apply-button p-button-link"
+                  @click="openInvoiceModal(data.invoiceNumber)"
+                >
+                  {{ data.invoiceNumber }}
+                </Button>
+              </template>
+            </Column>
+            <Column
+              field="amount"
+              header="Payment Amount"
+              sortable
+              class="text-right px-4 py-2 border-b"
+            >
+              <template #body="{ data }">
+                {{ formatCurrency(data.amount) }}
+              </template>
+            </Column>
+            <Column
+              field="paymentDate"
+              header="Payment Date"
+              sortable
+              class="text-left px-4 py-2 border-b"
+            >
+              <template #body="{ data }">
+                {{ formatDate(data.paymentDate) }}
+              </template>
+            </Column>
+          </DataTable>
+        </div>
+      </template>
+      <template v-else>
+        <div class="text-center text-gray-500 py-4">
+          No payments found for this customer in the selected date range.
+        </div>
+      </template>
+    </div>
 
     <!-- Invoice Modal -->
     <InvoiceModal
@@ -72,7 +87,7 @@
     />
   </Drawer>
 </template>
-  
+
 <script setup>
 import axios from 'axios';
 import Button from 'primevue/button';
@@ -149,26 +164,32 @@ async function fetchPayments() {
 
   try {
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-    const response = await axios.get(`${backendUrl}/financial-dashboard/customer-payments`, {
-      params: { customerNumber: props.customerNumber },
+    const response = await axios.get(`${backendUrl}/financial-dashboard/customer-payment-history`, {
+      params: {
+        customerNumber: props.customerNumber,
+        // Optionally pass date range
+        // startDate: '2023-01-01',
+        // endDate: '2023-07-31',
+      },
     });
 
-    console.log('Fetched customer payments:', response.data);
+    console.log('Fetched customer payment history:', response.data);
 
-    payments.value = response.data.map((payment) => ({
-      invoiceNumber: payment.invoiceNumber,
-      date: payment.date, // Raw date for sorting
-      formattedDate: formatDate(payment.date), // Formatted date for display
-      amount: payment.amount,
-    }));
+    // Flatten the data into individual invoice payment records
+    payments.value = response.data.flatMap((payment) =>
+      payment.relatedInvoices.map((invoice) => ({
+        invoiceNumber: invoice.invoiceNumber,
+        amount: Math.abs(invoice.amount), // Amount paid towards the invoice
+        paymentDate: payment.paymentDate,
+      }))
+    );
   } catch (err) {
-    console.error('Error fetching customer payments:', err);
-    error.value = 'Failed to fetch payment history.';
+    console.error('Error fetching customer payment history:', err);
+    error.value = 'Failed to fetch payment history. Please try again later.';
   } finally {
     isLoading.value = false;
   }
 }
-
 // Formatting functions
 function formatCurrency(value) {
   const amount = Number(value) || 0;
@@ -179,6 +200,7 @@ function formatCurrency(value) {
 }
 
 function formatDate(dateString) {
+  if (!dateString) return '';
   const date = new Date(dateString);
   return date.toLocaleDateString(undefined, {
     year: 'numeric',
@@ -187,17 +209,17 @@ function formatDate(dateString) {
   });
 }
 </script>
-  
+
 <style scoped>
 .apply-button {
   background-color: #FFFFFF !important;
   color: #297FB7 !important;
   border: 1px solid #297FB7 !important;
-  padding: 0.6rem 1.2rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
 }
 
@@ -258,5 +280,4 @@ function formatDate(dateString) {
   justify-content: center;
   padding: 1rem 0;
 }
-
 </style>
