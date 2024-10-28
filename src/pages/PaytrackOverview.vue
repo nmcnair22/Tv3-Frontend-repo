@@ -1,129 +1,19 @@
 <template>
-  <div class="paytrack-overview">
-    <!-- Stat Boxes Section -->
-    <div class="grid grid-cols-12 gap-4">
-      <!-- Total AR with Percentage Change -->
-      <div class="col-span-12 md:col-span-6 lg:col-span-3">
-        <StatBox 
-          :value="totalAR" 
-          title="Total Accounts Receivable"
-          format="currency"
-          :percentageChange="arChange"
-          periodLabel="since last month"
-          icon="pi-wallet"
-          iconBgColor="bg-blue-100 dark:bg-blue-400/30"
-          iconColor="text-blue-500 dark:text-blue-200"
-        />
-      </div>
-      <!-- Percentage Late with Total Late Amount and Breakdown -->
-      <div class="col-span-12 md:col-span-6 lg:col-span-3">
-        <StatBox 
-          :value="percentageLate" 
-          title="Percentage Late" 
-          format="percentage"
-          :subtitle="formattedTotalLateAmount"
-          :bottomContent="breakdownContent"
-          icon="pi-percentage"
-          iconBgColor="bg-orange-100 dark:bg-orange-400/30"
-          iconColor="text-orange-500 dark:text-orange-200"
-        />
-      </div>
-      <!-- DSO StatBox -->
-      <div class="col-span-12 md:col-span-6 lg:col-span-3">
-        <StatBox
-          :value="averageDSO ? averageDSO.toFixed(2) : '-'"
-          title="Current DSO"
-          format="number"
-          :percentageChange="dsoChange"
-          periodLabel="since last period"
-          icon="pi-calendar"
-          iconBgColor="bg-cyan-100 dark:bg-cyan-400/30"
-          iconColor="text-cyan-500 dark:text-cyan-200"
-        />
-      </div>
-      <!-- Placeholder for another metric or stat box -->
-      <div class="col-span-12 md:col-span-6 lg:col-span-3">
-        <!-- You can add another StatBox here if needed -->
-      </div>
-    </div>
-
-   <!-- Top Customers with Highest Late Amounts -->
-   <div class="mt-8">
-      <h3 class="text-xl font-bold mb-4">Top Customers with Highest Late Amounts</h3>
-
-      <div class="flex flex-wrap -mx-2">
-        <div
-          v-for="(customers, periodLabel) in topLateCustomers"
-          :key="periodLabel"
-          class="w-full md:w-1/3 px-2 mb-6"
-        >
-          <h4 class="text-lg font-semibold mb-2">{{ periodLabel }}</h4>
-          <DataTable :value="customers" class="min-w-full bg-white">
-            <Column field="customerName" header="Customer Name" sortable></Column>
-            <Column field="amount" header="Amount" sortable>
-              <template #body="{ data }">
-                {{ formatCurrency(data.amount) }}
-              </template>
-            </Column>
-          </DataTable>
-        </div>
-      </div>
-    </div>
-
-<!-- DSO and Aging Summary Row -->
-<div class="mt-8 flex flex-wrap -mx-2">
-      <!-- Top 5 Customers with Highest DSO -->
-      <div class="w-full md:w-2/5 px-2 mb-6">
-        <h3 class="text-xl font-bold mb-4">Top 5 Customers with Highest DSO</h3>
-        <DataTable :value="perCustomerDSO" class="min-w-full bg-white">
-          <Column field="customerName" header="Customer Name" sortable></Column>
-          <Column field="averageDSO" header="Average DSO (Days)" sortable>
-            <template #body="{ data }">
-              {{ data.averageDSO.toFixed(2) }}
-            </template>
-          </Column>
-        </DataTable>
-      </div>
-
-      <!-- Accounts Receivable Aging Summary Chart -->
-      <div class="w-full md:w-3/5 px-2 mb-6">
-        <h3 class="text-xl font-bold mb-4">Accounts Receivable Aging Summary</h3>
-        <div class="flex justify-center">
-          <Chart 
-            type="pie" 
-            :data="agingSummaryChartData" 
-            :options="chartOptions" 
-            style="width: 500px; height: 400px;"
-          />
-        </div>
-      </div>
-    </div>
-    <!-- Charts -->
-    <div class="chart-section mt-8">
-      <h3>AR Breakdown by Category</h3>
-      <Chart type="bar" :data="arBreakdownData" :options="chartOptions" />
-    </div>
-
-    <div class="chart-section mt-8">
-      <h3>Historical Trends</h3>
-      <Chart type="line" :data="historicalTrendsData" :options="chartOptions" />
-    </div>
-  </div>
+  <!-- Same as your old working version -->
+  <!-- ... -->
 </template>
 
 <script setup>
 import axios from 'axios';
-import Chart from 'primevue/chart';
-import Column from 'primevue/column';
-import DataTable from 'primevue/datatable';
 import { computed, onMounted, ref } from 'vue';
-import StatBox from '../components/StatBox.vue';
 import { useAgingReportStore } from '../store/agingReportStore';
 import { useBalanceSheetStore } from '../store/balanceSheetStore';
+import { useDSOStore } from '../store/dsoStore'; // Import the DSO store
 
 // Initialize stores
 const agingStore = useAgingReportStore();
 const balanceSheetStore = useBalanceSheetStore();
+const dsoStore = useDSOStore(); // Initialize DSO store
 
 // Backend URL
 const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
@@ -135,13 +25,14 @@ const percentageLate = ref(0);
 const arChange = ref(0); // Change in AR percentage
 const arBreakdownData = ref(null);
 const historicalTrendsData = ref(null);
-const agingSummaryChartData = ref(null); // Added variable
+const agingSummaryChartData = ref(null);
 const chartOptions = ref({
   responsive: true,
   maintainAspectRatio: false,
 });
-// Set selectedDate to the correct date (today's date in your case)
-const selectedDate = ref(new Date()); // Update to the actual current date
+
+// Set selectedDate to the current date
+const selectedDate = ref(new Date());
 
 // Variables for total late amount and late breakdown
 const totalLateAmount = ref(0);
@@ -150,13 +41,12 @@ const lateBreakdown = ref({ period1: 0, period2: 0, period3: 0 });
 // Reactive variable for top late customers
 const topLateCustomers = ref({});
 
-// DSO Variables
-const perCustomerDSO = ref([]);
-const averageDSO = ref(0);
-const previousDSO = ref(0);
+// DSO Variables using the DSO Store
+const averageDSO = computed(() => dsoStore.averageDSO);
+const previousDSO = computed(() => dsoStore.previousDSO);
+const perCustomerDSO = computed(() => dsoStore.perCustomerDSO);
 const dsoChange = computed(() => {
   if (previousDSO.value === 0) {
-    // Handle the case where previous DSO is zero
     return averageDSO.value === 0 ? 0 : 100;
   }
   return ((averageDSO.value - previousDSO.value) / previousDSO.value) * 100;
@@ -195,55 +85,19 @@ onMounted(async () => {
   // Process additional aging data
   processAgingData();
 
-  // Fetch DSO data
+  // Fetch DSO data using the DSO store
   await fetchDSOData();
 
-  // Fetch per-customer DSO data
+  // Fetch per-customer DSO data using the DSO store
   await fetchPerCustomerDSOData();
 
   // Fetch top late customers data
   await fetchTopLateCustomers();
 });
 
-// Function to generate Aging Summary Chart Data
-function generateAgingSummaryChartData() {
-  const agingTotals = {
-    current: 0,
-    period1: 0,
-    period2: 0,
-    period3: 0,
-  };
-
-  const filteredAgingReport = agingStore.agingReport.filter(
-    (item) => item.customerId !== '00000000-0000-0000-0000-000000000000'
-  );
-
-  filteredAgingReport.forEach((item) => {
-    agingTotals.current += item.currentAmount || 0;
-    agingTotals.period1 += item.period1Amount || 0;
-    agingTotals.period2 += item.period2Amount || 0;
-    agingTotals.period3 += item.period3Amount || 0;
-  });
-
-  return {
-    labels: ['Current', '30+ Days', '60+ Days', '90+ Days'],
-    datasets: [
-      {
-        data: [
-          agingTotals.current,
-          agingTotals.period1,
-          agingTotals.period2,
-          agingTotals.period3,
-        ],
-        backgroundColor: ['#4caf50', '#ffeb3b', '#ff9800', '#f44336'],
-      },
-    ],
-  };
-}
-
 // Function to fetch aging report
 async function fetchAgingReport() {
-  const formattedDate = formatDate(selectedDate.value); // Use selectedDate for consistency
+  const formattedDate = formatDate(selectedDate.value);
   try {
     await agingStore.fetchAgingReport(formattedDate);
   } catch (error) {
@@ -254,8 +108,8 @@ async function fetchAgingReport() {
 // Fetch balance sheet data for today and one month ago
 async function fetchBalanceSheetData() {
   try {
-    const formattedDate = formatDate(selectedDate.value); // Format selectedDate
-    const previousMonthDate = formatDate(getPreviousMonthDate(selectedDate.value)); // Get the previous month's date
+    const formattedDate = formatDate(selectedDate.value);
+    const previousMonthDate = formatDate(getPreviousMonthDate(selectedDate.value));
 
     // Fetch balance sheet for current date
     console.log(`[${new Date().toLocaleTimeString()}] Fetching balance sheet for date: ${formattedDate}`);
@@ -367,14 +221,43 @@ function calculateLateBreakdown() {
   };
 }
 
-// -------------------------------------------
-// DSO Calculation Updates
-// -------------------------------------------
+// Function to generate Aging Summary Chart Data
+function generateAgingSummaryChartData() {
+  const agingTotals = {
+    current: 0,
+    period1: 0,
+    period2: 0,
+    period3: 0,
+  };
 
-/**
- * Fetches DSO metrics for the current and previous periods using the new backend endpoint.
- * Updates the average DSO and calculates the change.
- */
+  const filteredAgingReport = agingStore.agingReport.filter(
+    (item) => item.customerId !== '00000000-0000-0000-0000-000000000000'
+  );
+
+  filteredAgingReport.forEach((item) => {
+    agingTotals.current += item.currentAmount || 0;
+    agingTotals.period1 += item.period1Amount || 0;
+    agingTotals.period2 += item.period2Amount || 0;
+    agingTotals.period3 += item.period3Amount || 0;
+  });
+
+  return {
+    labels: ['Current', '30+ Days', '60+ Days', '90+ Days'],
+    datasets: [
+      {
+        data: [
+          agingTotals.current,
+          agingTotals.period1,
+          agingTotals.period2,
+          agingTotals.period3,
+        ],
+        backgroundColor: ['#4caf50', '#ffeb3b', '#ff9800', '#f44336'],
+      },
+    ],
+  };
+}
+
+// Fetch DSO data using the DSO store
 async function fetchDSOData() {
   try {
     // Define date ranges using selectedDate as the end date
@@ -394,51 +277,18 @@ async function fetchDSOData() {
     const formattedEndDatePrevious = formatDate(endDatePrevious);
 
     // Fetch DSO for current period
-    const responseCurrent = await axios.get(`${backendUrl}/financial-dashboard/dso`, {
-      params: {
-        startDate: formattedStartDateCurrent,
-        endDate: formattedEndDateCurrent,
-      },
-    });
-
-    // Validate response data
-    if (responseCurrent.data && typeof responseCurrent.data.dso === 'number') {
-      averageDSO.value = responseCurrent.data.dso;
-      console.log(`[${new Date().toLocaleTimeString()}] Fetched Current DSO:`, averageDSO.value);
-    } else {
-      console.warn('Invalid DSO data received for current period.');
-      averageDSO.value = 0;
-    }
+    await dsoStore.fetchCurrentDSO(formattedStartDateCurrent, formattedEndDateCurrent);
 
     // Fetch DSO for previous period
-    const responsePrevious = await axios.get(`${backendUrl}/financial-dashboard/dso`, {
-      params: {
-        startDate: formattedStartDatePrevious,
-        endDate: formattedEndDatePrevious,
-      },
-    });
-
-    // Validate response data
-    if (responsePrevious.data && typeof responsePrevious.data.dso === 'number') {
-      previousDSO.value = responsePrevious.data.dso;
-      console.log(`[${new Date().toLocaleTimeString()}] Fetched Previous DSO:`, previousDSO.value);
-    } else {
-      console.warn('Invalid DSO data received for previous period.');
-      previousDSO.value = 0;
-    }
-
-    // DSO Change is automatically computed via the computed property
+    await dsoStore.fetchPreviousDSO(formattedStartDatePrevious, formattedEndDatePrevious);
   } catch (error) {
     console.error('Error fetching DSO data:', error);
-    averageDSO.value = 0;
-    previousDSO.value = 0;
   }
 }
 
-// Fetch per-customer DSO data
+// Fetch per-customer DSO data using the DSO store
 async function fetchPerCustomerDSOData() {
   try {
-    // Define date ranges using selectedDate as the end date
     const endDateCurrent = new Date(selectedDate.value);
     const startDateCurrent = new Date(endDateCurrent);
     startDateCurrent.setDate(endDateCurrent.getDate() - 30); // Last 30 days
@@ -446,29 +296,11 @@ async function fetchPerCustomerDSOData() {
     const formattedStartDateCurrent = formatDate(startDateCurrent);
     const formattedEndDateCurrent = formatDate(endDateCurrent);
 
-    const response = await axios.get(`${backendUrl}/financial-dashboard/dso-per-customer`, {
-      params: {
-        startDate: formattedStartDateCurrent,
-        endDate: formattedEndDateCurrent,
-      },
-    });
-
-    if (Array.isArray(response.data)) {
-      perCustomerDSO.value = response.data.slice(0, 5); // Get top 5 customers
-      console.log(`[${new Date().toLocaleTimeString()}] Fetched per-customer DSO data:`, perCustomerDSO.value);
-    } else {
-      console.warn('Invalid data received for per-customer DSO.');
-      perCustomerDSO.value = [];
-    }
+    await dsoStore.fetchPerCustomerDSO(formattedStartDateCurrent, formattedEndDateCurrent);
   } catch (error) {
     console.error('Error fetching per-customer DSO data:', error);
-    perCustomerDSO.value = [];
   }
 }
-
-// -------------------------------------------
-// End of DSO Updates
-// -------------------------------------------
 
 /**
  * Generates data for the AR Breakdown chart.
@@ -527,15 +359,8 @@ async function fetchTopLateCustomers() {
     topLateCustomers.value = {};
   }
 }
-
 </script>
 
 <style scoped>
-.paytrack-overview {
-  padding: 1rem;
-}
-
-.chart-section {
-  margin-bottom: 2rem;
-}
+/* Same as your old working version */
 </style>

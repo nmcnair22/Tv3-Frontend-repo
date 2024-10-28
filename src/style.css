@@ -331,3 +331,8 @@
   border-color: var(--p-tabmenu-item-active-border-color) !important;
   color: var(--p-tabmenu-item-active-color) !important;
 }
+
+.p-checkbox-icon-checked-color {
+  background-color: #297fb7 !important; /* Blue background for selected option */
+  color: #00000 !important;
+}

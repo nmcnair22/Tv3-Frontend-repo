@@ -141,12 +141,42 @@ const navs = ref([
                 path: '/finance/balance-sheet'
             },
             {
-                label: 'Dashboard', // Existing Dashboard link
+                label: 'Dashboard - Live',
                 path: '/finance/dashboard'
             },
             {
-                label: 'Paytrack', // <-- New Paytrack link added here
-                path: '/finance/paytrack/overview'
+                label: 'Dashboard - Local',
+                path: '/finance/dashboard-local'
+            },
+            {
+                label: 'Paytrack - Old',  // Old Paytrack link
+                path: '/finance/paytrack/overview'  // Link to old Paytrack
+            },
+            {
+                label: 'Paytrack - Local',  // New Paytrack link
+                path: '/finance/paytrack-local/overview'  // Link to new Paytrack
+            }
+        ]
+    },
+    {
+        icon: 'pi pi-check-circle',  // Icon for Qualifications
+        label: 'Qualifications',
+        subMenu: [
+            {
+                label: 'Requests',
+                path: '/prequal/requests',
+            },
+            {
+                label: 'Queue',
+                path: '/prequal/queue',
+            },
+            {
+                label: 'Import/Export',
+                path: '/prequal/import-export',
+            },
+            {
+                label: 'Analytics',
+                path: '/prequal/analytics',
             }
         ]
     },

@@ -3,13 +3,22 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 // Import existing components
 import FormWithFiles from '../components/formWithFiles.vue';
+import PrequalLayout from '../layouts/PrequalLayout.vue';
 import StatsDemo from '../layouts/statsDemo.vue';
 import BalanceSheet from '../pages/BalanceSheet.vue';
 import CashFlow from '../pages/CashFlow.vue';
 import FinanceDashboard from '../pages/FinanceDashboard.vue';
+import FinanceDashboardLocal from '../pages/FinanceDashboardLocal.vue';
 import Income from '../pages/Income.vue';
 import Paytrack from '../pages/Paytrack.vue'; // Main Paytrack Component
 import PaytrackOverview from '../pages/PaytrackOverview.vue'; // Paytrack Overview Page
+import PaytrackOverviewLocal from '../pages/PaytrackOverviewLocal.vue'; // New Paytrack Overview Local
+import PrequalAnalytics from '../pages/prequal/PrequalAnalytics.vue';
+import PrequalDetail from '../pages/prequal/PrequalDetail.vue';
+import PrequalImportExport from '../pages/prequal/PrequalImportExport.vue';
+import PrequalQueue from '../pages/prequal/PrequalQueue.vue';
+import PrequalRequest from '../pages/prequal/PrequalRequest.vue';
+import TestPage from '../pages/TestPage.vue';
 
 // Create placeholder components
 const Placeholder = { template: '<div>Coming Soon...</div>' };
@@ -66,13 +75,23 @@ const routes = [
     },
   },
   {
+    path: '/finance/dashboard-local',
+    component: FinanceDashboardLocal,
+    name: 'FinanceDashboardLocal',
+    meta: {
+      title: 'Finance Dashboard - Local',
+      breadcrumb: ['Finance', 'Dashboard - Local'],
+      headerType: 'default',
+    },
+  },
+  {
     path: '/finance/paytrack',
-    component: Paytrack, // <-- Main Paytrack component
+    component: Paytrack, // Main Paytrack component for the old version
     name: 'Paytrack',
     meta: {
-      title: 'Paytrack',
+      title: 'Paytrack - Old',
       breadcrumb: ['Finance', 'Paytrack'],
-      headerType: 'with-tabs', // Indicates that this header includes tabs
+      headerType: 'with-tabs',
       headerOptions: {
         showTabs: true,
         tabs: [
@@ -84,18 +103,13 @@ const routes = [
     },
     children: [
       {
-        path: 'overview', // Paytrack Overview
+        path: 'overview', // Old Paytrack Overview
         component: PaytrackOverview,
         name: 'PaytrackOverview',
-        meta: {
-          title: 'Paytrack Overview',
-          breadcrumb: ['Finance', 'Paytrack', 'Overview'],
-          headerType: 'with-tabs', // Keep the tabs for all Paytrack routes
-        },
       },
       {
-        path: 'customers', // Paytrack Customers
-        component: Placeholder, // Replace this with the actual Customers component later
+        path: 'customers',
+        component: Placeholder, // Replace with actual Customers component later
         name: 'PaytrackCustomers',
         meta: {
           title: 'Paytrack Customers',
@@ -104,8 +118,8 @@ const routes = [
         },
       },
       {
-        path: 'invoices', // Paytrack Invoices
-        component: Placeholder, // Replace this with the actual Invoices component later
+        path: 'invoices',
+        component: Placeholder, // Replace with actual Invoices component later
         name: 'PaytrackInvoices',
         meta: {
           title: 'Paytrack Invoices',
@@ -116,14 +130,54 @@ const routes = [
     ],
   },
   {
-    path: '/streamline/dashboard',
-    component: Placeholder,
-    name: 'StreamlineDashboard',
+    path: '/finance/paytrack-local',
+    component: Paytrack, // Main Paytrack component for the local version
+    name: 'PaytrackLocal',
     meta: {
-      title: 'Streamline Dashboard',
-      breadcrumb: ['Streamline', 'Dashboard'],
-      headerType: 'default',
+      title: 'Paytrack - Local',
+      breadcrumb: ['Finance', 'Paytrack - Local'],
+      headerType: 'with-tabs',
+      headerOptions: {
+        showTabs: true,
+        tabs: [
+          { label: 'Overview', icon: 'pi pi-fw pi-chart-bar', route: '/finance/paytrack-local/overview' },
+          { label: 'Customers', icon: 'pi pi-fw pi-list', route: '/finance/paytrack-local/customers' },
+          { label: 'Invoices', icon: 'pi pi-file-o', route: '/finance/paytrack-local/invoices' },
+        ],
+      },
     },
+    children: [
+      {
+        path: 'overview', // New Paytrack Overview
+        component: PaytrackOverviewLocal, // New PaytrackOverviewLocal component
+        name: 'PaytrackOverviewLocal',
+        meta: {
+          title: 'Paytrack Overview - Local',
+          breadcrumb: ['Finance', 'Paytrack - Local', 'Overview'],
+          headerType: 'with-tabs',
+        },
+      },
+      {
+        path: 'customers', // Paytrack Customers
+        component: Placeholder, // Replace with actual Customers component later
+        name: 'PaytrackCustomersLocal',
+        meta: {
+          title: 'Paytrack Customers - Local',
+          breadcrumb: ['Finance', 'Paytrack - Local', 'Customers'],
+          headerType: 'with-tabs',
+        },
+      },
+      {
+        path: 'invoices', // Paytrack Invoices
+        component: Placeholder, // Replace with actual Invoices component later
+        name: 'PaytrackInvoicesLocal',
+        meta: {
+          title: 'Paytrack Invoices - Local',
+          breadcrumb: ['Finance', 'Paytrack - Local', 'Invoices'],
+          headerType: 'with-tabs',
+        },
+      },
+    ],
   },
   {
     path: '/streamline/bill-imports',
@@ -134,6 +188,81 @@ const routes = [
       breadcrumb: ['Streamline', 'Bill Imports'],
       headerType: 'default',
     },
+  },
+  {
+    path: '/prequal',
+    component: PrequalLayout,
+    meta: {
+      title: 'Prequalification Tool',
+      breadcrumb: ['Prequal'],
+      headerType: 'with-tabs',
+      headerOptions: {
+        showTabs: true,
+        tabs: [
+          { label: 'Requests', icon: 'pi pi-fw pi-list', route: '/prequal/requests' },
+          { label: 'Queue', icon: 'pi pi-fw pi-inbox', route: '/prequal/queue' },
+          { label: 'Import/Export', icon: 'pi pi-fw pi-upload', route: '/prequal/import-export' },
+          { label: 'Analytics', icon: 'pi pi-fw pi-chart-bar', route: '/prequal/analytics' },
+        ],
+      },
+    },
+    children: [
+      {
+        path: 'requests',
+        component: PrequalRequest,
+        name: 'PrequalRequests', // Unique route name
+        meta: {
+          title: 'Request Submission',
+          breadcrumb: ['Prequal', 'Requests'],
+          headerType: 'with-tabs',
+        },
+      },
+      {
+        path: 'queue',
+        component: PrequalQueue,
+        name: 'PrequalQueue',
+        meta: {
+          title: 'Queue Management',
+          breadcrumb: ['Prequal', 'Queue'],
+          headerType: 'with-tabs',
+        },
+      },
+      {
+        path: 'detail/:id',
+        component: PrequalDetail,
+        name: 'PrequalDetail',
+        meta: {
+          title: 'Request Detail',
+          breadcrumb: ['Prequal', 'Detail'],
+          headerType: 'with-tabs',
+        },
+      },
+      {
+        path: 'import-export',
+        component: PrequalImportExport,
+        name: 'PrequalImportExport',
+        meta: {
+          title: 'Data Import/Export',
+          breadcrumb: ['Prequal', 'Import/Export'],
+          headerType: 'with-tabs',
+        },
+      },
+      {
+        path: 'analytics',
+        component: PrequalAnalytics,
+        name: 'PrequalAnalytics',
+        meta: {
+          title: 'Analytics',
+          breadcrumb: ['Prequal', 'Analytics'],
+          headerType: 'with-tabs',
+        },
+      },
+      // Redirect `/prequal` to `/prequal/requests`
+      {
+        path: '',
+        redirect: 'requests',
+      },
+    ],
   },
   {
     path: '/managed-services',
@@ -182,6 +311,16 @@ const routes = [
     meta: {
       title: 'Page Not Found',
       breadcrumb: ['Home', '404'],
+      headerType: 'default',
+    },
+  },
+  {
+    path: '/test',
+    component: TestPage,
+    name: 'TestPage',
+    meta: {
+      title: 'Test Page',
+      breadcrumb: ['Test'],
       headerType: 'default',
     },
   },
