@@ -1,4 +1,5 @@
 <!-- src/components/ReceivablesOverview.vue -->
+<!-- src/components/ReceivablesOverview.vue -->
 <template>
   <div class="receivables-overview">
     <div class="stat-card">
@@ -14,17 +15,26 @@
       <p>{{ formatCurrency(inflowsData.netChangeReceivables) }}</p>
     </div>
     <div class="stat-card">
-      <h3>Total New Invoices</h3>
+      <h3>New Revenue</h3>
       <p>{{ formatCurrency(inflowsData.totalNewInvoices) }}</p>
     </div>
     <div class="stat-card">
-      <h3>Total Payments Received</h3>
+      <h3>Payments</h3>
       <p>{{ formatCurrency(inflowsData.totalPaymentsReceived) }}</p>
     </div>
-    <!-- New Stat Card for Total Credits -->
     <div class="stat-card">
-      <h3>Total Credits</h3>
+      <h3>Credits</h3>
       <p>{{ formatCurrency(inflowsData.totalCredits) }}</p>
+    </div>
+    <!-- New Stat Card for Adjustments -->
+    <div class="stat-card">
+      <h3>Adjustments</h3>
+      <p>{{ formatCurrency(inflowsData.adjustments) }}</p>
+    </div>
+    <!-- Optional: New Stat Card for Total Change in AR -->
+    <div class="stat-card">
+      <h3>Total Change in AR</h3>
+      <p>{{ formatCurrency(inflowsData.totalChangeInAR) }}</p>
     </div>
   </div>
 </template>
