@@ -1,20 +1,18 @@
 <!-- src/components/PaymentHistoryModal.vue -->
 <template>
-<Drawer
-  v-model:visible="modalVisible"
-  position="bottom"
-  :header="`Payment History for ${customerName}`"
-  :dismissable="true"
-  :breakpoints="{ '960px': '90vw' }"
-  closable
-  closeOnEscape
-  class="bg-white p-6 rounded-lg shadow-lg"
-  :style="{ height: '90vh' }"
->
+  <Drawer
+    v-model:visible="modalVisible"
+    position="full"
+    :header="`Payment History for ${customerName}`"
+    :dismissable="true"
+    closable
+    closeOnEscape
+    class="bg-white p-6 shadow-lg flex flex-col"
+  >
     <div v-if="isLoading" class="flex justify-center items-center py-4">
       <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
     </div>
-    <div v-else>
+    <div v-else class="flex flex-col flex-1">
       <template v-if="error">
         <div class="text-center text-red-500 py-4">
           {{ error }}
@@ -35,7 +33,7 @@
             </div>
           </div>
         </div>
-
+  
         <!-- Factors Influencing Credit Score -->
         <div
           v-if="creditScoreData && creditScoreData.factors && isValidFactors(creditScoreData.factors)"
@@ -43,21 +41,18 @@
         >
           <h3 class="text-lg font-semibold">Factors Influencing Your Score</h3>
           <div class="grid grid-cols-3 gap-4 mt-2">
-            <!-- Total Purchase Amount -->
             <div class="stat-box">
               <p class="stat-value">
                 {{ formatCurrency(creditScoreData.factors?.totalPurchaseAmount) }}
               </p>
               <p class="stat-label">Total Purchases</p>
             </div>
-            <!-- Payment Timeliness -->
             <div class="stat-box">
               <p class="stat-value">
                 {{ formatPercentage(creditScoreData.factors?.PTF) }}
               </p>
               <p class="stat-label">Payment Timeliness</p>
             </div>
-            <!-- Outstanding Balance -->
             <div class="stat-box">
               <p class="stat-value">
                 {{ formatCurrency(creditScoreData.factors?.outstandingBalance) }}
@@ -66,140 +61,143 @@
             </div>
           </div>
         </div>
-
-        <!-- Credit Score Trend Chart -->
-        <div class="credit-score-trend my-4">
-          <h3 class="text-lg font-semibold">Credit Score Trend</h3>
-          <div v-if="hasValidChartData">
-            <canvas id="creditScoreChart"></canvas>
+  
+        <!-- Flex container for chart and table -->
+        <div class="flex flex-col flex-1"> 
+          <!-- Credit Score Trend Chart -->
+          <div class="credit-score-trend my-4 flex-shrink-0"> 
+            <h3 class="text-lg font-semibold">Credit Score Trend</h3>
+            <div v-if="hasValidChartData">
+              <canvas id="creditScoreChart"></canvas>
+            </div>
+            <div v-else class="text-center text-gray-500">
+              No credit score data available to display.
+            </div>
           </div>
-          <div v-else class="text-center text-gray-500">
-            No credit score data available to display.
+  
+          <!-- Payment Table - Flex-grow to take remaining space -->
+          <div class="payment-table flex-grow overflow-auto">
+            <DataTable
+              :value="combinedData"
+              paginator
+              :rows="10"
+              class="min-w-full bg-white"
+              :loading="isLoading"
+              :sortField="'sortDate'"
+              :sortOrder="-1"
+              :rowClass="rowClass"
+            >
+          <!-- Invoice Number Column -->
+              <Column
+                field="invoiceNumber"
+                header="Invoice Number"
+                sortable
+                class="text-left px-4 py-2 border-b"
+              >
+                <template #body="{ data }">
+                  <Button
+                    v-if="data && data.invoiceNumber"
+                    label=""
+                    class="apply-button p-button-link"
+                    @click="openInvoiceModal(data.invoiceNumber)"
+                  >
+                    {{ data.invoiceNumber }}
+                  </Button>
+                  <span v-else>-</span>
+                </template>
+              </Column>
+  
+              <!-- Total Amount Column -->
+              <Column
+                field="amount"
+                header="Total Amount"
+                sortable
+                class="text-right px-4 py-2 border-b"
+              >
+                <template #body="{ data }">
+                  {{ data && data.amount ? formatCurrency(data.amount) : '-' }}
+                </template>
+              </Column>
+  
+              <!-- Amount Paid Column -->
+              <Column
+                field="amountPaid"
+                header="Amount Paid"
+                sortable
+                class="text-right px-4 py-2 border-b"
+              >
+                <template #body="{ data }">
+                  {{ data && data.amountPaid !== null ? formatCurrency(data.amountPaid) : '-' }}
+                </template>
+              </Column>
+  
+              <!-- Balance Column -->
+              <Column
+                field="amountRemaining"
+                header="Balance"
+                sortable
+                class="text-right px-4 py-2 border-b"
+              >
+                <template #body="{ data }">
+                  {{ data && data.amountRemaining !== null ? formatCurrency(data.amountRemaining) : '-' }}
+                </template>
+              </Column>
+  
+              <!-- Due Date Column -->
+              <Column
+                field="dueDate"
+                header="Due Date"
+                sortable
+                class="text-left px-4 py-2 border-b"
+              >
+                <template #body="{ data }">
+                  {{ data && data.dueDate ? formatDate(data.dueDate) : '-' }}
+                </template>
+              </Column>
+  
+              <!-- Payment Date Column -->
+              <Column
+                field="paymentDate"
+                header="Payment Date"
+                sortable
+                class="text-left px-4 py-2 border-b"
+              >
+                <template #body="{ data }">
+                  {{ data && data.paymentDate ? formatDate(data.paymentDate) : '-' }}
+                </template>
+              </Column>
+  
+              <!-- Type Column -->
+              <Column
+                field="type"
+                header="Type"
+                sortable
+                class="text-left px-4 py-2 border-b"
+              >
+                <template #body="{ data }">
+                  {{ data && data.type ? data.type : '-' }}
+                </template>
+              </Column>
+  
+              <!-- Status Column -->
+              <Column
+                field="status"
+                header="Status"
+                sortable
+                class="text-left px-4 py-2 border-b"
+              >
+                <template #body="{ data }">
+                  <span :class="['status-label', getStatusClass(data)]">
+                    {{ data && data.status ? data.status : '-' }}
+                  </span>
+                </template>
+              </Column>
+            </DataTable>
           </div>
-        </div>
-
-        <!-- Payment Table -->
-        <div class="payment-table">
-          <DataTable
-            :value="combinedData"
-            paginator
-            :rows="10"
-            class="min-w-full bg-white"
-            :loading="isLoading"
-            :sortField="'sortDate'"
-            :sortOrder="-1"
-            :rowClass="rowClass"
-          >
-            <!-- Invoice Number Column -->
-            <Column
-              field="invoiceNumber"
-              header="Invoice Number"
-              sortable
-              class="text-left px-4 py-2 border-b"
-            >
-              <template #body="{ data }">
-                <Button
-                  v-if="data && data.invoiceNumber"
-                  label=""
-                  class="apply-button p-button-link"
-                  @click="openInvoiceModal(data.invoiceNumber)"
-                >
-                  {{ data.invoiceNumber }}
-                </Button>
-                <span v-else>-</span>
-              </template>
-            </Column>
-
-            <!-- Total Amount Column -->
-            <Column
-              field="amount"
-              header="Total Amount"
-              sortable
-              class="text-right px-4 py-2 border-b"
-            >
-              <template #body="{ data }">
-                {{ data && data.amount ? formatCurrency(data.amount) : '-' }}
-              </template>
-            </Column>
-
-            <!-- Amount Paid Column -->
-            <Column
-              field="amountPaid"
-              header="Amount Paid"
-              sortable
-              class="text-right px-4 py-2 border-b"
-            >
-              <template #body="{ data }">
-                {{ data && data.amountPaid !== null ? formatCurrency(data.amountPaid) : '-' }}
-              </template>
-            </Column>
-
-            <!-- Balance Column -->
-            <Column
-              field="amountRemaining"
-              header="Balance"
-              sortable
-              class="text-right px-4 py-2 border-b"
-            >
-              <template #body="{ data }">
-                {{ data && data.amountRemaining !== null ? formatCurrency(data.amountRemaining) : '-' }}
-              </template>
-            </Column>
-
-            <!-- Due Date Column -->
-            <Column
-              field="dueDate"
-              header="Due Date"
-              sortable
-              class="text-left px-4 py-2 border-b"
-            >
-              <template #body="{ data }">
-                {{ data && data.dueDate ? formatDate(data.dueDate) : '-' }}
-              </template>
-            </Column>
-
-            <!-- Payment Date Column -->
-            <Column
-              field="paymentDate"
-              header="Payment Date"
-              sortable
-              class="text-left px-4 py-2 border-b"
-            >
-              <template #body="{ data }">
-                {{ data && data.paymentDate ? formatDate(data.paymentDate) : '-' }}
-              </template>
-            </Column>
-
-            <!-- Type Column -->
-            <Column
-              field="type"
-              header="Type"
-              sortable
-              class="text-left px-4 py-2 border-b"
-            >
-              <template #body="{ data }">
-                {{ data && data.type ? data.type : '-' }}
-              </template>
-            </Column>
-
-            <!-- Status Column -->
-            <Column
-              field="status"
-              header="Status"
-              sortable
-              class="text-left px-4 py-2 border-b"
-            >
-              <template #body="{ data }">
-                <span :class="['status-label', getStatusClass(data)]">
-                  {{ data && data.status ? data.status : '-' }}
-                </span>
-              </template>
-            </Column>
-          </DataTable>
         </div>
       </template>
     </div>
-
+  
     <!-- Invoice Modal -->
     <InvoiceModal
       :visible="isInvoiceModalVisible"
@@ -207,8 +205,8 @@
       :invoiceNumber="selectedInvoiceNumber"
     />
   </Drawer>
-</template>
-
+  </template>
+  
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
 import { usePaymentHistoryStore } from '../store/paymentHistoryStore';
@@ -414,47 +412,51 @@ function updateCreditScoreChart() {
     const yMin = Math.floor(minScore / 50) * 50 - 50; // Round down to nearest 50 and subtract 50
     const yMax = Math.ceil(maxScore / 50) * 50 + 50;  // Round up to nearest 50 and add 50
 
-    creditScoreChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: validData.map((item) => item.date),
-        datasets: [
-          {
-            label: 'Credit Score',
-            data: validData.map((item) => item.creditScore),
-            borderColor: '#3182ce',
-            backgroundColor: 'rgba(49, 130, 206, 0.2)',
-            fill: true,
-            tension: 0.4, // For smooth curves
-          },
-        ],
+    const canvas = document.getElementById('creditScoreChart');
+canvas.width = 400; // Adjust width
+canvas.height = 50; // Adjust height
+
+creditScoreChart = new Chart(canvas.getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: validData.map((item) => item.date),
+    datasets: [
+      {
+        label: 'Credit Score',
+        data: validData.map((item) => item.creditScore),
+        borderColor: '#3182ce',
+        backgroundColor: 'rgba(49, 130, 206, 0.2)',
+        fill: true,
+        tension: 0.4, // For smooth curves
       },
-      options: {
-        scales: {
-          x: {
-            display: true,
-            title: { display: true, text: 'Date' },
-          },
-          y: {
-            display: true,
-            title: { display: true, text: 'Credit Score' },
-            min: yMin >= 0 ? yMin : 0, // Ensure yMin is not negative
-            max: yMax,
-          },
-        },
-        plugins: {
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-          },
-          legend: {
-            display: false,
-          },
-        },
-        responsive: true,
-        maintainAspectRatio: false,
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        display: true,
+        title: { display: true, text: 'Date' },
       },
-    });
+      y: {
+        display: true,
+        title: { display: true, text: 'Credit Score' },
+        min: yMin >= 0 ? yMin : 0,
+        max: yMax,
+      },
+    },
+    plugins: {
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+      },
+      legend: {
+        display: false,
+      },
+    },
+  },
+});
   }
 }
 
@@ -562,7 +564,10 @@ function rowClass(data) {
 }
 </script>
 
+
 <style scoped>
+
+
 .apply-button {
   color: #297fb7 !important;
 }
@@ -658,16 +663,24 @@ function rowClass(data) {
 
 /* Credit Score Trend */
 .credit-score-trend {
-  position: relative;
-  /* Remove fixed height */
-  /* height: 300px; */ /* Remove this line */
-  min-height: 200px; /* Set a minimum height */
-  height: 40vh; /* Set height relative to viewport height */
+  /* Removed height: auto; */
+  flex-shrink: 0; /* Prevent shrinking */
+  /* Optionally set a fixed height */
+  height: 300px; /* Adjust as needed */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 #creditScoreChart {
   width: 100%;
-  height: 100%;
+  height: 100%; /* Ensures it fills the container */
+}
+
+.payment-table {
+  /* max-height: 300px; */ /* Removed max-height */
+  flex-grow: 1; /* Allow the table to grow */
+  overflow-y: auto; /* Ensure the table can scroll if needed */
 }
 
 @media (max-width: 768px) {
