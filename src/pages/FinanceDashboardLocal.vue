@@ -1,7 +1,6 @@
-<!-- src/pages/FinanceDashboardlocal.vue -->
+<!-- src/pages/FinanceDashboardLocal.vue -->
 <template>
   <div class="finance-dashboard">
-
     <!-- Date Range Selector Component -->
     <DateRangeSelector
       :initialSelectedRange="selectedRange"
@@ -12,83 +11,28 @@
       @update:initialSelectedDates="handleDatesUpdate"
     />
 
-    <!-- Loading and Error Components -->
-    <Loading v-if="isLoading" />
-    <ErrorMessage v-if="error" :message="error" />
-
-    <!-- Inflows Section -->
-    <div v-if="!isLoading && inflowsData">
-      <h2 class="section-title">
-        Inflows{{ formattedDateRange ? ': ' + formattedDateRange : '' }}
-      </h2>
-
-      <!-- Receivables Overview Cards Component -->
-      <div class="receivables-overview-container">
-        <ReceivablesOverview :inflowsData="inflowsData" />
-      </div>
-
-      <!-- Add spacing between KPI cards and charts -->
-      <div class="section-spacing"></div>
-
-      <!-- Charts Container -->
-      <div class="charts-container">
-        <!-- Pie Chart (RevenueByCategoryChart) -->
-        <div class="chart-item">
-          <RevenueByCategoryChart
-            v-if="inflowsData.revenueCategories && inflowsData.revenueCategories.length"
-            :revenueCategories="inflowsData.revenueCategories"
-          />
-        </div>
-
-        <!-- Line Chart (PaymentsByCustomerChart) -->
-        <div class="chart-item">
-          <PaymentsByCustomerChart
-            v-if="inflowsData.paymentsByCustomer && inflowsData.paymentsByCustomer.length"
-            :paymentsByCustomer="inflowsData.paymentsByCustomer"
-          />
-        </div>
-      </div>
-
-      <!-- Aging Report Section -->
-      <AgingReport
-        v-if="selectedEndDate && agingReportData.length > 0"
-        :asOfDate="formatDate(selectedEndDate)"
-        :reportData="agingReportData"
-        :isLoading="agingReportIsLoading"
-        :error="agingReportError"
-      />
-      <div v-else-if="!agingReportIsLoading && agingReportError">
-        <ErrorMessage :message="agingReportError" />
-      </div>
-      <div v-else-if="!agingReportIsLoading">
-        <p>No aging report data available.</p>
-      </div>
-    </div>
+    <!-- Route-specific content -->
+    <router-view
+      :formattedDateRange="formattedDateRange"
+      :selectedEndDate="selectedEndDate"
+    />
   </div>
 </template>
 
 <script setup>
- import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useAgingReportStore } from '../store/agingReportStore';
 import { useFinancialDashboardLocalStore } from '../store/financialDashboardLocalStore';
 
 // Import components
-import AgingReport from '../components/AgingReport.vue';
 import DateRangeSelector from '../components/DateRangeSelector.vue';
-import ErrorMessage from '../components/ErrorMessage.vue';
-import Loading from '../components/Loading.vue';
-import PaymentsByCustomerChart from '../components/PaymentsByCustomerChart.vue';
-import ReceivablesOverview from '../components/ReceivablesOverview.vue';
-import RevenueByCategoryChart from '../components/RevenueByCategoryChart.vue';
 
 const dashboardStore = useFinancialDashboardLocalStore();
 const agingReportStore = useAgingReportStore();
 
 const isLoading = computed(() => dashboardStore.isLoading);
-const inflowsData = computed(() => dashboardStore.inflowsData || {});
 const error = computed(() => dashboardStore.error);
 
-const agingReportData = computed(() => agingReportStore.agingReport || []);
 const agingReportIsLoading = computed(() => agingReportStore.isLoading);
 const agingReportError = computed(() => agingReportStore.error);
 
@@ -108,18 +52,14 @@ const dateRanges = [
 // Property to store formatted date range
 const formattedDateRange = ref('');
 
-
 watch([selectedRange, selectedDates], async () => {
-  console.log('Watch Triggered: selectedRange or selectedDates changed');
-  
   // Ensure that the selected values have been updated before applying the filter
   if (selectedRange.value || (selectedDates.value && selectedDates.value.length === 2)) {
     formattedDateRange.value = getFormattedDateRange();
     selectedEndDate.value = getSelectedEndDate(); // Update the selected end date
-    console.log('Updated Selected End Date:', selectedEndDate.value);
 
     if (selectedEndDate.value) {
-      await applyDateFilter();  // Apply filter once the new values are set
+      await applyDateFilter(); // Apply filter once the new values are set
     }
   }
 });
@@ -167,8 +107,7 @@ function getSelectedEndDate() {
       const lastMonthDate = subMonths(today, 1);
       return endOfMonth(lastMonthDate);
     }
-  } 
-  else if (selectedDates.value && selectedDates.value.length === 2) {
+  } else if (selectedDates.value && selectedDates.value.length === 2) {
     const endDate = selectedDates.value[1];
     return new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
   }
@@ -191,10 +130,6 @@ async function applyDateFilter() {
   let startDate, endDate;
   const today = new Date();
 
-  console.log('applyDateFilter triggered with:');
-  console.log('selectedRange:', selectedRange.value);
-  console.log('selectedDates:', selectedDates.value);
-
   if (selectedRange.value && selectedRange.value.value !== 'custom') {
     if (selectedRange.value.value === 'monthToDate') {
       startDate = formatDate(startOfMonth(today));
@@ -212,18 +147,14 @@ async function applyDateFilter() {
   }
 
   if (startDate && endDate) {
-    console.log('Fetching inflows data with startDate:', startDate, 'and endDate:', endDate);
-
     // Update the inflowsData store with the correct start and end dates
     await dashboardStore.fetchInflowsData(startDate, endDate);
-    
+
     // Correct the formatted date range for display
     formattedDateRange.value = getFormattedDateRange();
 
     // Set the selected end date for use in other components
     selectedEndDate.value = parseDate(endDate);
-
-    console.log('Applied Date Filter. Selected End Date:', selectedEndDate.value);
 
     // Fetch the aging report with the new end date
     if (selectedEndDate.value) {
@@ -236,9 +167,7 @@ async function applyDateFilter() {
 
 async function fetchAgingReport(asOfDate) {
   try {
-    console.log('Fetching aging report for asOfDate:', asOfDate);
     await agingReportStore.fetchAgingReport(asOfDate);
-    console.log('Aging report fetched successfully');
   } catch (error) {
     console.error('Error fetching aging report:', error);
   }
@@ -279,21 +208,18 @@ function formatDisplayDate(date) {
 }
 
 function handleRangeUpdate(newRange) {
-  console.log('Range Updated:', newRange); // Log the updated range
   selectedRange.value = newRange;
 }
 
 function handleDatesUpdate(newDates) {
-  console.log('Dates Updated:', newDates); // Log the updated dates
   selectedDates.value = newDates;
 }
-
 </script>
 
 <style scoped>
 .finance-dashboard {
   padding: 0rem;
-  background-color: #FFFFFF; /* Keep the main background white for clarity */
+  background-color: #FFFFFF;
 }
 
 /* Main Title Styling */

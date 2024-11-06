@@ -21,13 +21,26 @@
       </span>
 
       <!-- Optional Components Slot: Tab Menu -->
-      <div v-if="tabs.length > 0" class="w-full md:w-auto">
-        <TabMenu
-          :model="tabs"
-          class="custom-tabmenu"
-          :activeItem="activeTab"
-          @tab-change="onTabChange"
-        />
+      <div v-if="tabs.length > 0" class="w-full md:w-auto flex items-center justify-center">
+        <ul
+          class="w-fit bg-surface-0 dark:bg-surface-950 list-none p-2 flex items-center overflow-x-auto select-none gap-2 border border-surface rounded-2xl"
+        >
+          <li v-for="(item, index) in tabs" :key="index">
+            <a
+              class="cursor-pointer px-5 py-3 flex items-center gap-2 rounded-lg border transition-all"
+              :class="{
+                'bg-surface-100 dark:bg-surface-900 border-surface font-medium text-surface-900 dark:text-surface-0':
+                  activeTabIndex === index,
+                'hover:bg-surface-50 dark:hover:bg-surface-900 border-transparent hover:border-surface-200 dark:hover:border-surface-800 text-surface-600 dark:text-surface-400':
+                  activeTabIndex !== index,
+              }"
+              @click="onTabClick(index)"
+            >
+              <i :class="item.icon" />
+              <span>{{ item.label }}</span>
+            </a>
+          </li>
+        </ul>
       </div>
 
       <div v-else>
@@ -45,34 +58,20 @@
 
 <script setup>
 import Badge from 'primevue/badge';
-import TabMenu from 'primevue/tabmenu';
-import { onMounted, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();
 
-// Retrieve the tabs from the route metadata
 const tabs = ref(route.meta.headerOptions?.tabs || []);
-const activeTab = ref(tabs.value[0] || null);
+const activeTabIndex = ref(0);
 
-// Debugging: Log route.meta and tabs
-console.log('Route meta:', route.meta);
-console.log('Tabs initialized:', tabs.value);
-
-// Handle tab change and navigate
-const onTabChange = (event) => {
-  // Debugging: Log the event and check its properties
-  console.log('Tab change event:', event);
-
-  const newTab = tabs.value[event.index];  // Use event.index to access the correct tab
-
-  // Debugging: Log the newTab based on the event index
-  console.log('New tab:', newTab);
-
+// Handle tab click and navigate
+const onTabClick = (index) => {
+  const newTab = tabs.value[index];
   if (newTab && newTab.route) {
-    activeTab.value = newTab;
-    console.log('Navigating to:', newTab.route);
+    activeTabIndex.value = index;
     router.push(newTab.route);
   } else {
     console.error('Tab does not have a valid route:', newTab);
@@ -80,23 +79,20 @@ const onTabChange = (event) => {
 };
 
 // Ensure the active tab is correctly set when the route changes
-watch(route, () => {
-  console.log('Route changed:', route.path);
-
-  // Re-fetch tabs when route changes
+const updateActiveTab = () => {
   tabs.value = route.meta.headerOptions?.tabs || [];
-  console.log('Updated tabs:', tabs.value);
+  const currentTabIndex = tabs.value.findIndex((tab) => tab.route === route.path);
+  if (currentTabIndex !== -1) {
+    activeTabIndex.value = currentTabIndex;
+  } else {
+    activeTabIndex.value = 0;
+  }
+};
 
-  // Update active tab based on the current route
-  const currentTab = tabs.value.find(tab => tab.route === route.path);
-  activeTab.value = currentTab || tabs.value[0];
-  console.log('Active tab set to:', activeTab.value);
-});
+watch(route, updateActiveTab);
 
-// Mounted hook for additional debugging
-onMounted(() => {
-  console.log('AppHeader component mounted');
-});
+// Initial setup
+updateActiveTab();
 </script>
 
 <style scoped>
@@ -112,74 +108,5 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.flex {
-  display: flex;
-}
-
-.items-start {
-  align-items: flex-start;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.text-xl {
-  font-size: 1.25rem;
-}
-
-.font-semibold {
-  font-weight: 600;
-}
-
-.mb-1 {
-  margin-bottom: 0.25rem;
-}
-
-.mb-2 {
-  margin-bottom: 0.5rem;
-  padding-right: 3rem;
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
-}
-
-.w-full {
-  width: 100%;
-}
-
-.md\:w-auto {
-  width: auto;
-}
-
-.md\:mr-6 {
-  margin-right: 1.5rem;
-}
-
-@media (min-width: 768px) {
-  .breadcrumbs {
-    margin-bottom: 0;
-  }
-
-  .text-xl {
-    font-size: 1.5rem;
-  }
-
-  .mb-2 {
-    margin-bottom: 0;
-  }
-
-  .mt-2 {
-    margin-top: 0;
-  }
-}
-
-/* Optional: Responsive Adjustments */
-@media (max-width: 768px) {
-  :deep(.custom-tabmenu .p-tabmenu-nav .p-tabmenuitem) {
-    padding: 0.5rem;
-    font-size: 0.875rem; /* Reduced font size on smaller screens */
-  }
-}
+/* No additional styles needed as Tailwind classes are used */
 </style>

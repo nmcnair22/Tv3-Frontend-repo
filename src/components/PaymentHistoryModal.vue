@@ -1,17 +1,16 @@
 <!-- src/components/PaymentHistoryModal.vue -->
 <template>
-  <Drawer
-    :visible="modalVisible"
-    @update:visible="handleModalVisibility"
-    position="bottom"
-    :header="`Payment History for ${customerName}`"
-    :dismissable="true"
-    :style="{ height: 'auto' }"
-    :breakpoints="{ '960px': '90vw' }"
-    closable
-    closeOnEscape
-    class="bg-white p-6 rounded-lg shadow-lg"
-  >
+<Drawer
+  v-model:visible="modalVisible"
+  position="bottom"
+  :header="`Payment History for ${customerName}`"
+  :dismissable="true"
+  :breakpoints="{ '960px': '90vw' }"
+  closable
+  closeOnEscape
+  class="bg-white p-6 rounded-lg shadow-lg"
+  :style="{ height: '90vh' }"
+>
     <div v-if="isLoading" class="flex justify-center items-center py-4">
       <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
     </div>
@@ -21,18 +20,77 @@
           {{ error }}
         </div>
       </template>
-      <template v-else-if="payments.length > 0">
-        <!-- Wrap DataTable in a div with 'payment-table' class -->
+      <template v-else>
+        <!-- Credit Score Section -->
+        <div v-if="creditScoreData" class="credit-score-section my-4">
+          <h2 class="text-xl font-bold">Credit Score</h2>
+          <div class="flex items-center mt-2">
+            <div :class="['credit-score-badge', getCreditScoreClass(creditScore)]">
+              {{ creditScore }}
+            </div>
+            <div class="ml-4">
+              <p class="text-sm text-gray-600">
+                Based on your payment history and outstanding balance.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Factors Influencing Credit Score -->
+        <div
+          v-if="creditScoreData && creditScoreData.factors && isValidFactors(creditScoreData.factors)"
+          class="factors-section my-4"
+        >
+          <h3 class="text-lg font-semibold">Factors Influencing Your Score</h3>
+          <div class="grid grid-cols-3 gap-4 mt-2">
+            <!-- Total Purchase Amount -->
+            <div class="stat-box">
+              <p class="stat-value">
+                {{ formatCurrency(creditScoreData.factors?.totalPurchaseAmount) }}
+              </p>
+              <p class="stat-label">Total Purchases</p>
+            </div>
+            <!-- Payment Timeliness -->
+            <div class="stat-box">
+              <p class="stat-value">
+                {{ formatPercentage(creditScoreData.factors?.PTF) }}
+              </p>
+              <p class="stat-label">Payment Timeliness</p>
+            </div>
+            <!-- Outstanding Balance -->
+            <div class="stat-box">
+              <p class="stat-value">
+                {{ formatCurrency(creditScoreData.factors?.outstandingBalance) }}
+              </p>
+              <p class="stat-label">Outstanding Balance</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Credit Score Trend Chart -->
+        <div class="credit-score-trend my-4">
+          <h3 class="text-lg font-semibold">Credit Score Trend</h3>
+          <div v-if="hasValidChartData">
+            <canvas id="creditScoreChart"></canvas>
+          </div>
+          <div v-else class="text-center text-gray-500">
+            No credit score data available to display.
+          </div>
+        </div>
+
+        <!-- Payment Table -->
         <div class="payment-table">
           <DataTable
-            :value="payments"
+            :value="combinedData"
             paginator
             :rows="10"
             class="min-w-full bg-white"
             :loading="isLoading"
-            :sortField="'paymentDate'"
+            :sortField="'sortDate'"
             :sortOrder="-1"
+            :rowClass="rowClass"
           >
+            <!-- Invoice Number Column -->
             <Column
               field="invoiceNumber"
               header="Invoice Number"
@@ -41,24 +99,66 @@
             >
               <template #body="{ data }">
                 <Button
+                  v-if="data && data.invoiceNumber"
                   label=""
                   class="apply-button p-button-link"
                   @click="openInvoiceModal(data.invoiceNumber)"
                 >
                   {{ data.invoiceNumber }}
                 </Button>
+                <span v-else>-</span>
               </template>
             </Column>
+
+            <!-- Total Amount Column -->
             <Column
               field="amount"
-              header="Payment Amount"
+              header="Total Amount"
               sortable
               class="text-right px-4 py-2 border-b"
             >
               <template #body="{ data }">
-                {{ formatCurrency(data.amount) }}
+                {{ data && data.amount ? formatCurrency(data.amount) : '-' }}
               </template>
             </Column>
+
+            <!-- Amount Paid Column -->
+            <Column
+              field="amountPaid"
+              header="Amount Paid"
+              sortable
+              class="text-right px-4 py-2 border-b"
+            >
+              <template #body="{ data }">
+                {{ data && data.amountPaid !== null ? formatCurrency(data.amountPaid) : '-' }}
+              </template>
+            </Column>
+
+            <!-- Balance Column -->
+            <Column
+              field="amountRemaining"
+              header="Balance"
+              sortable
+              class="text-right px-4 py-2 border-b"
+            >
+              <template #body="{ data }">
+                {{ data && data.amountRemaining !== null ? formatCurrency(data.amountRemaining) : '-' }}
+              </template>
+            </Column>
+
+            <!-- Due Date Column -->
+            <Column
+              field="dueDate"
+              header="Due Date"
+              sortable
+              class="text-left px-4 py-2 border-b"
+            >
+              <template #body="{ data }">
+                {{ data && data.dueDate ? formatDate(data.dueDate) : '-' }}
+              </template>
+            </Column>
+
+            <!-- Payment Date Column -->
             <Column
               field="paymentDate"
               header="Payment Date"
@@ -66,15 +166,36 @@
               class="text-left px-4 py-2 border-b"
             >
               <template #body="{ data }">
-                {{ formatDate(data.paymentDate) }}
+                {{ data && data.paymentDate ? formatDate(data.paymentDate) : '-' }}
+              </template>
+            </Column>
+
+            <!-- Type Column -->
+            <Column
+              field="type"
+              header="Type"
+              sortable
+              class="text-left px-4 py-2 border-b"
+            >
+              <template #body="{ data }">
+                {{ data && data.type ? data.type : '-' }}
+              </template>
+            </Column>
+
+            <!-- Status Column -->
+            <Column
+              field="status"
+              header="Status"
+              sortable
+              class="text-left px-4 py-2 border-b"
+            >
+              <template #body="{ data }">
+                <span :class="['status-label', getStatusClass(data)]">
+                  {{ data && data.status ? data.status : '-' }}
+                </span>
               </template>
             </Column>
           </DataTable>
-        </div>
-      </template>
-      <template v-else>
-        <div class="text-center text-gray-500 py-4">
-          No payments found for this customer in the selected date range.
         </div>
       </template>
     </div>
@@ -89,13 +210,41 @@
 </template>
 
 <script setup>
-import axios from 'axios';
+import { computed, nextTick, ref, watch } from 'vue';
+import { usePaymentHistoryStore } from '../store/paymentHistoryStore';
+import InvoiceModal from './InvoiceModal.vue';
+
+// PrimeVue Components
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import Drawer from 'primevue/drawer';
-import { computed, ref, watch } from 'vue';
-import InvoiceModal from './InvoiceModal.vue';
+
+// Import and register Chart.js components
+import {
+  CategoryScale,
+  Chart,
+  Filler,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+} from 'chart.js';
+
+Chart.register(
+  LineElement,
+  PointElement,
+  LineController,
+  CategoryScale,
+  LinearScale,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 // Props
 const props = defineProps({
@@ -116,91 +265,258 @@ const props = defineProps({
 // Emits
 const emit = defineEmits(['update:visible']);
 
-// State
-const payments = ref([]);
-const isLoading = ref(false);
-const error = ref(null);
-
 // State for the Invoice Modal
 const isInvoiceModalVisible = ref(false);
 const selectedInvoiceNumber = ref('');
 
-// Computed property for dialog visibility
-const modalVisible = computed({
-  get() {
-    return props.visible;
-  },
-  set(value) {
-    emit('update:visible', value);
-  },
+// Store
+const paymentHistoryStore = usePaymentHistoryStore();
+
+// Computed properties
+const payments = computed(() => paymentHistoryStore.payments || []);
+const unpaidInvoices = computed(() => paymentHistoryStore.unpaidInvoices || []);
+const partiallyPaidInvoices = computed(() => paymentHistoryStore.partiallyPaidInvoices || []);
+const isLoading = computed(() => paymentHistoryStore.isLoading);
+const error = computed(() => paymentHistoryStore.error);
+const creditScoreData = computed(() => paymentHistoryStore.creditScoreData);
+const creditScoreHistory = computed(() => paymentHistoryStore.creditScoreHistory);
+const creditScore = computed(() => {
+  const score = creditScoreData.value?.creditScore;
+  return score != null && !isNaN(score) ? score : 'N/A';
 });
 
-// Event handler for dialog visibility update
-function handleModalVisibility(value) {
-  modalVisible.value = value;
+// Check if there is valid chart data
+const hasValidChartData = computed(() => {
+  return (
+    creditScoreHistory.value &&
+    creditScoreHistory.value.some((item) => item.creditScore != null && !isNaN(item.creditScore))
+  );
+});
+
+// Combined data
+const combinedData = computed(() => {
+  try {
+    const paymentRecords = payments.value.flatMap((payment) =>
+      (payment.relatedInvoices || []).map((invoice) => {
+        const dueDateStr = invoice.dueDate || null;
+        const paymentDateStr = payment.paymentDate || null;
+
+        const dueDate = dueDateStr ? new Date(dueDateStr) : null;
+        const paymentDate = paymentDateStr ? new Date(paymentDateStr) : null;
+
+        // Determine payment status
+        let status = 'Paid';
+        if (dueDate && paymentDate) {
+          if (paymentDate <= dueDate) {
+            status = 'Paid: On-time';
+          } else {
+            status = 'Paid: Late';
+          }
+        }
+
+        return {
+          invoiceNumber: invoice.invoiceNumber,
+          amount: Math.abs(invoice.amount),
+          amountPaid: Math.abs(invoice.amount),
+          amountRemaining: 0,
+          dueDate: dueDateStr,
+          paymentDate: paymentDateStr,
+          sortDate: dueDateStr || paymentDateStr,
+          type: 'Payment',
+          status: status,
+        };
+      })
+    );
+
+    const unpaidInvoiceRecords = unpaidInvoices.value.map((invoice) => ({
+      invoiceNumber: invoice.invoiceNumber,
+      amount: invoice.totalAmount,
+      amountPaid: invoice.amountPaid || 0,
+      amountRemaining: invoice.amountRemaining || invoice.totalAmount,
+      dueDate: invoice.dueDate,
+      paymentDate: null,
+      sortDate: invoice.dueDate,
+      type: 'Invoice',
+      status: 'Unpaid',
+    }));
+
+    const partiallyPaidInvoiceRecords = partiallyPaidInvoices.value.map((invoice) => ({
+      invoiceNumber: invoice.invoiceNumber,
+      amount: invoice.totalAmount,
+      amountPaid: invoice.amountPaid,
+      amountRemaining: invoice.amountRemaining,
+      dueDate: invoice.dueDate,
+      paymentDate: null,
+      sortDate: invoice.dueDate,
+      type: 'Invoice',
+      status: 'Partially Paid',
+    }));
+
+    // Combine all records
+    const result = [...unpaidInvoiceRecords, ...partiallyPaidInvoiceRecords, ...paymentRecords];
+
+    // Sort by 'sortDate' descending
+    result.sort((a, b) => {
+      const dateA = new Date(a.sortDate || 0);
+      const dateB = new Date(b.sortDate || 0);
+      return dateB - dateA;
+    });
+
+    console.log('Combined Data:', result);
+    return result;
+  } catch (error) {
+    console.error('Error in combinedData computation:', error);
+    return [];
+  }
+});
+
+// Dialog visibility
+const modalVisible = ref(props.visible);
+
+watch(
+  () => props.visible,
+  (newValue) => {
+    modalVisible.value = newValue;
+  }
+);
+
+watch(
+  () => modalVisible.value,
+  (newValue) => {
+    emit('update:visible', newValue);
+  }
+);
+
+// Initialize the credit score chart
+let creditScoreChart = null;
+
+// Function to initialize or update the chart
+function updateCreditScoreChart() {
+  if (hasValidChartData.value) {
+    // Destroy previous chart instance if exists
+    if (creditScoreChart) {
+      creditScoreChart.destroy();
+    }
+
+    // Filter out invalid data points
+    const validData = creditScoreHistory.value.filter(
+      (item) => item.creditScore != null && !isNaN(item.creditScore)
+    );
+
+    const ctx = document.getElementById('creditScoreChart').getContext('2d');
+
+    // Find min and max credit scores for dynamic scaling
+    const creditScores = validData.map((item) => item.creditScore);
+    const minScore = Math.min(...creditScores);
+    const maxScore = Math.max(...creditScores);
+
+    // Add some padding to min and max for better visualization
+    const yMin = Math.floor(minScore / 50) * 50 - 50; // Round down to nearest 50 and subtract 50
+    const yMax = Math.ceil(maxScore / 50) * 50 + 50;  // Round up to nearest 50 and add 50
+
+    creditScoreChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: validData.map((item) => item.date),
+        datasets: [
+          {
+            label: 'Credit Score',
+            data: validData.map((item) => item.creditScore),
+            borderColor: '#3182ce',
+            backgroundColor: 'rgba(49, 130, 206, 0.2)',
+            fill: true,
+            tension: 0.4, // For smooth curves
+          },
+        ],
+      },
+      options: {
+        scales: {
+          x: {
+            display: true,
+            title: { display: true, text: 'Date' },
+          },
+          y: {
+            display: true,
+            title: { display: true, text: 'Credit Score' },
+            min: yMin >= 0 ? yMin : 0, // Ensure yMin is not negative
+            max: yMax,
+          },
+        },
+        plugins: {
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+          },
+          legend: {
+            display: false,
+          },
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    });
+  }
 }
 
-// Function to open the Invoice Modal
-function openInvoiceModal(invoiceNumber) {
-  selectedInvoiceNumber.value = invoiceNumber;
-  isInvoiceModalVisible.value = true;
-}
-
-// Watch for visibility changes to fetch payments
+// Watch for visibility changes to fetch data
 watch(
   () => modalVisible.value,
   (newValue) => {
     if (newValue) {
-      fetchPayments();
+      // Fetch payment history
+      paymentHistoryStore.fetchPaymentHistory(props.customerNumber).then(() => {
+        console.log('Payments:', payments.value);
+        console.log('Unpaid Invoices:', unpaidInvoices.value);
+        console.log('Partially Paid Invoices:', partiallyPaidInvoices.value);
+        console.log('Combined Data:', combinedData.value);
+      });
+
+      // Fetch credit score
+      paymentHistoryStore.fetchCreditScore(props.customerNumber);
+
+      // Fetch credit score history
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - 1);
+
+      paymentHistoryStore
+        .fetchCreditScoreHistory(
+          props.customerNumber,
+          startDate.toISOString().split('T')[0],
+          endDate
+        )
+        .then(() => {
+          // Update the chart after fetching data and DOM is updated
+          nextTick(() => {
+            updateCreditScoreChart();
+          });
+        });
     }
   },
+  { immediate: true }
 );
 
-// Fetch payments when modal is opened
-async function fetchPayments() {
-  payments.value = []; // Clear previous payments
-  isLoading.value = true;
-  error.value = null;
-
-  try {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-    const response = await axios.get(`${backendUrl}/financial-dashboard/customer-payment-history`, {
-      params: {
-        customerNumber: props.customerNumber,
-        // Optionally pass date range
-        // startDate: '2023-01-01',
-        // endDate: '2023-07-31',
-      },
-    });
-
-    console.log('Fetched customer payment history:', response.data);
-
-    // Flatten the data into individual invoice payment records
-    payments.value = response.data.flatMap((payment) =>
-      payment.relatedInvoices.map((invoice) => ({
-        invoiceNumber: invoice.invoiceNumber,
-        amount: Math.abs(invoice.amount), // Amount paid towards the invoice
-        paymentDate: payment.paymentDate,
-      }))
-    );
-  } catch (err) {
-    console.error('Error fetching customer payment history:', err);
-    error.value = 'Failed to fetch payment history. Please try again later.';
-  } finally {
-    isLoading.value = false;
-  }
-}
-// Formatting functions
+// Methods
 function formatCurrency(value) {
-  const amount = Number(value) || 0;
+  if (value == null || isNaN(value)) {
+    return 'N/A';
+  }
+  const amount = Number(value);
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
   }).format(amount);
 }
 
+function formatPercentage(value) {
+  if (value == null || isNaN(value)) {
+    return 'N/A';
+  }
+  return `${value.toFixed(2)}%`;
+}
+
 function formatDate(dateString) {
-  if (!dateString) return '';
+  if (!dateString) return '-';
   const date = new Date(dateString);
   return date.toLocaleDateString(undefined, {
     year: 'numeric',
@@ -208,76 +524,174 @@ function formatDate(dateString) {
     day: 'numeric',
   });
 }
+
+function isValidFactors(factors) {
+  return (
+    factors &&
+    typeof factors.totalPurchaseAmount === 'number' &&
+    typeof factors.PTF === 'number' &&
+    typeof factors.outstandingBalance === 'number'
+  );
+}
+
+function getStatusClass(data) {
+  if (!data || !data.status) return '';
+  if (data.status === 'Unpaid') return 'status-unpaid';
+  if (data.status === 'Partially Paid') return 'status-partially-paid';
+  if (data.status === 'Paid: On-time') return 'status-paid-on-time';
+  if (data.status === 'Paid: Late') return 'status-paid-late';
+  if (data.status === 'Paid') return 'status-paid';
+  return 'status-default';
+}
+
+function getCreditScoreClass(score) {
+  if (score >= 750) return 'credit-score-excellent';
+  if (score >= 700) return 'credit-score-good';
+  if (score >= 650) return 'credit-score-fair';
+  if (score >= 600) return 'credit-score-poor';
+  return 'credit-score-bad';
+}
+
+function openInvoiceModal(invoiceNumber) {
+  selectedInvoiceNumber.value = invoiceNumber;
+  isInvoiceModalVisible.value = true;
+}
+
+function rowClass(data) {
+  return '';
+}
 </script>
 
 <style scoped>
 .apply-button {
-  background-color: #FFFFFF !important;
-  color: #297FB7 !important;
-  border: 1px solid #297FB7 !important;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
+  color: #297fb7 !important;
 }
 
 .apply-button:hover {
-  background-color: #297FB7 !important;
-  color: #FFFFFF !important;
+  color: #ffffff !important;
 }
 
-.apply-button:active {
-  background-color: #08294A !important;
+/* Status Labels */
+.status-label {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  display: inline-block;
 }
 
-.apply-button:disabled {
-  background-color: #D3D3D3 !important; /* Light Gray for disabled state */
-  color: #A6A6A6 !important; /* Neutral Gray text */
-  cursor: not-allowed;
+/* Set text color within each status class */
+.status-unpaid {
+  background-color: #f56565; /* Red */
+  color: #fff;
 }
 
-.apply-button .pi {
-  margin-right: 0.5rem;
+.status-partially-paid {
+  background-color: #d69e2e; /* Yellow */
+  color: #fff;
 }
 
-/* Override the paginator active page highlight */
-:deep(.payment-table .p-paginator .p-paginator-page.p-highlight) {
-  background-color: #297FB7 !important; /* Desired blue color */
-  border-color: #297FB7 !important;
-  color: #FFFFFF !important; /* Ensure text is readable */
+.status-paid-on-time {
+  background-color: #48bb78; /* Green */
+  color: #fff;
 }
 
-/* Override paginator buttons */
-:deep(.payment-table .p-paginator .p-paginator-page),
-:deep(.payment-table .p-paginator .p-paginator-next),
-:deep(.payment-table .p-paginator .p-paginator-prev) {
-  background-color: #FFFFFF !important;
-  color: #297FB7 !important;
-  border: 1px solid #297FB7 !important;
+.status-paid-late {
+  background-color: #ed8936; /* Orange */
+  color: #fff;
 }
 
-/* Hover states for paginator buttons */
-:deep(.payment-table .p-paginator .p-paginator-page:hover),
-:deep(.payment-table .p-paginator .p-paginator-next:hover),
-:deep(.payment-table .p-paginator .p-paginator-prev:hover) {
-  background-color: #297FB7 !important; /* Blue background on hover */
-  color: #FFFFFF !important; /* White text/icons on hover */
+.status-paid {
+  background-color: #48bb78; /* Green */
+  color: #fff;
 }
 
-/* Active hover state for highlighted paginator page */
-:deep(.payment-table .p-paginator .p-paginator-page.p-highlight:hover),
-:deep(.payment-table .p-paginator .p-paginator-next:hover),
-:deep(.payment-table .p-paginator .p-paginator-prev:hover) {
-  background-color: #1F5F8A !important; /* Darker blue on hover */
-  color: #FFFFFF !important;
+.status-default {
+  color: #000; /* Default text color */
 }
 
-/* Optional: Customize DataTable Pagination Alignment and Spacing */
-:deep(.payment-table .p-paginator) {
-  display: flex;
-  justify-content: center;
-  padding: 1rem 0;
+/* Credit Score Styles */
+.credit-score-badge {
+  font-size: 2rem;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  color: #fff;
+}
+
+.credit-score-excellent {
+  background-color: #38a169; /* Green */
+}
+
+.credit-score-good {
+  background-color: #48bb78; /* Light Green */
+}
+
+.credit-score-fair {
+  background-color: #ed8936; /* Orange */
+}
+
+.credit-score-poor {
+  background-color: #e53e3e; /* Red */
+}
+
+.credit-score-bad {
+  background-color: #9b2c2c; /* Dark Red */
+}
+
+/* Stat Boxes */
+.stat-box {
+  background-color: #f7fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #4a5568;
+}
+
+/* Credit Score Trend */
+.credit-score-trend {
+  position: relative;
+  /* Remove fixed height */
+  /* height: 300px; */ /* Remove this line */
+  min-height: 200px; /* Set a minimum height */
+  height: 40vh; /* Set height relative to viewport height */
+}
+
+#creditScoreChart {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 768px) {
+  .grid-cols-3 {
+    grid-template-columns: 1fr; /* Stack columns vertically on small screens */
+  }
+
+  .stat-box {
+    margin-bottom: 1rem; /* Add space between stacked boxes */
+  }
+}
+
+.credit-score-badge {
+  font-size: 2rem; /* Adjust as needed */
+  /* Add responsive font size */
+}
+
+@media (max-width: 768px) {
+  .credit-score-badge {
+    font-size: 1.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
 }
 </style>
