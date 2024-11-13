@@ -1,4 +1,4 @@
-// Example placeholder component file: src/pages/NewTab1.vue
+// Example placeholder component file: src/pages/NewTab2.vue
 <template>
   <div>
     <h2>New Tab 2 Content</h2>

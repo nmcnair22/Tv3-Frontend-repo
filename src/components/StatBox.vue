@@ -89,7 +89,16 @@ const iconClass = computed(() => {
 });
 
 // Function to format the value based on the format prop
-function formatValue(value: number | string, format: 'currency' | 'number' | 'percentage'): string {
+function formatValue(
+  value: number | string | null | undefined,
+  format: 'currency' | 'number' | 'percentage' | 'string'
+): string {
+  if (value === null || value === undefined || value === '-') return '-';
+
+  if (format === 'string') {
+    return value.toString();
+  }
+
   const numericValue = typeof value === 'string' ? parseFloat(value) : value;
   if (isNaN(numericValue)) return '-';
 
@@ -103,7 +112,7 @@ function formatValue(value: number | string, format: 'currency' | 'number' | 'pe
       return numericValue.toFixed(2);
   }
 }
-
+ 
 </script>
 
 <style scoped>

@@ -7,12 +7,12 @@ import PrequalLayout from '../layouts/PrequalLayout.vue';
 import StatsDemo from '../layouts/statsDemo.vue';
 import BalanceSheet from '../pages/BalanceSheet.vue';
 import CashFlow from '../pages/CashFlow.vue';
+import NewTab1 from '../pages/CustomerFinancialProfile.vue';
 import FinanceDashboard from '../pages/FinanceDashboard.vue';
 import FinanceDashboardLocal from '../pages/FinanceDashboardLocal.vue';
 import FinanceDashboardLocalAgingPayments from '../pages/FinanceDashboardLocalAgingPayments.vue';
 import FinanceDashboardLocalInflows from '../pages/FinanceDashboardLocalInflows.vue';
 import Income from '../pages/Income.vue';
-import NewTab1 from '../pages/NewTab1.vue';
 import NewTab2 from '../pages/NewTab2.vue';
 import Paytrack from '../pages/Paytrack.vue'; // Main Paytrack Component
 import PaytrackOverview from '../pages/PaytrackOverview.vue'; // Paytrack Overview Page
@@ -90,7 +90,7 @@ const routes = [
         tabs: [
           { label: 'Inflows', icon: 'pi pi-fw pi-chart-bar', route: '/finance/dashboard-local/inflows' },
           { label: 'Aging and Payments', icon: 'pi pi-fw pi-clock', route: '/finance/dashboard-local/aging-payments' },
-          { label: 'New Tab 1', icon: 'pi pi-fw pi-chart-line', route: '/finance/dashboard-local/new-tab-1' },
+          { label: 'Customer Financial Profile', icon: 'pi pi-fw pi-chart-line', route: '/finance/dashboard-local/new-tab-1' },
           { label: 'New Tab 2', icon: 'pi pi-fw pi-chart-pie', route: '/finance/dashboard-local/new-tab-2' },
         ],
       },
@@ -123,8 +123,8 @@ const routes = [
         component: NewTab1,
         name: 'FinanceDashboardLocalNewTab1',
         meta: {
-          title: 'New Tab 1',
-          breadcrumb: ['Finance', 'Dashboard - Local', 'New Tab 1'],
+          title: 'Customer Financial Profile',
+          breadcrumb: ['Finance', 'Dashboard - Local', 'Customer Financial Profile'],
           headerType: 'with-tabs',
         },
       },
