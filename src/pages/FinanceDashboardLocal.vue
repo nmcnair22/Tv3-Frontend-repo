@@ -3,6 +3,7 @@
   <div class="finance-dashboard">
     <!-- Date Range Selector Component -->
     <DateRangeSelector
+      v-if="shouldShowDateRangeSelector"
       :initialSelectedRange="selectedRange"
       :initialSelectedDates="selectedDates"
       :dateRanges="dateRanges"
@@ -21,6 +22,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router'; // Import useRoute
 import { useAgingReportStore } from '../store/agingReportStore';
 import { useFinancialDashboardLocalStore } from '../store/financialDashboardLocalStore';
 
@@ -52,6 +54,16 @@ const dateRanges = [
 // Property to store formatted date range
 const formattedDateRange = ref('');
 
+// Get the current route
+const route = useRoute();
+
+// Determine whether to show the DateRangeSelector
+const shouldShowDateRangeSelector = computed(() => {
+  // If the meta property is explicitly set to false, hide the selector
+  return route.meta.showDateRangeSelector !== false;
+});
+
+// Watch for changes in selectedRange and selectedDates
 watch([selectedRange, selectedDates], async () => {
   // Ensure that the selected values have been updated before applying the filter
   if (selectedRange.value || (selectedDates.value && selectedDates.value.length === 2)) {
@@ -292,6 +304,5 @@ function handleDatesUpdate(newDates) {
   .section-title {
     font-size: 1.5rem;
   }
-
 }
 </style>

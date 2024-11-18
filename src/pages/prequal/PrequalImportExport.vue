@@ -43,7 +43,7 @@
 import Button from 'primevue/button';
 import FileUpload from 'primevue/fileupload';
 import { ref } from 'vue';
-import { usePrequalStore } from '../../store/prequalstore';
+
   
   const prequalStore = usePrequalStore();
   const fileUploadRef = ref(null);

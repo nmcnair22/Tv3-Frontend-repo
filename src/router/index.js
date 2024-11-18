@@ -115,6 +115,7 @@ const routes = [
           title: 'Aging and Payments',
           breadcrumb: ['Finance', 'Dashboard - Local', 'Aging and Payments'],
           headerType: 'with-tabs',
+          showDateRangeSelector: false,
         },
         props: true,
       },
@@ -126,6 +127,7 @@ const routes = [
           title: 'Customer Financial Profile',
           breadcrumb: ['Finance', 'Dashboard - Local', 'Customer Financial Profile'],
           headerType: 'with-tabs',
+          showDateRangeSelector: false,
         },
       },
       {

@@ -4,7 +4,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
 export const useCustomerFinancialProfileStore = defineStore('customerFinancialProfile', () => {
-    const customerData = ref({});
+    const customerData = ref(null);
     const creditScoreHistory = ref([]);
     const spendTrendData = ref({});
     const spendByCategoryData = ref([]);
@@ -22,7 +22,11 @@ export const useCustomerFinancialProfileStore = defineStore('customerFinancialPr
         try {
             const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
             const response = await axios.get(`${backendUrl}/customers/${customerNumber}/credit/score`);
-            customerData.value = response.data;
+            // Merge new data into customerData
+            customerData.value = {
+                ...customerData.value,
+                ...response.data,
+            };
         } catch (err) {
             error.value = `Error fetching credit score: ${err.message}`;
             console.error('Error fetching credit score:', err);
@@ -141,6 +145,21 @@ export const useCustomerFinancialProfileStore = defineStore('customerFinancialPr
         }
     }
 
+    // Add the clearData method
+    function clearData() {
+        customerData.value = {};
+        creditScoreHistory.value = [];
+        spendTrendData.value = {};
+        spendByCategoryData.value = [];
+        paymentHistory.value = {
+            payments: [],
+            unpaidInvoices: [],
+            partiallyPaidInvoices: [],
+        };
+        contributingFactors.value = [];
+        error.value = null;
+    }
+
     return {
         customerData,
         creditScoreHistory,
@@ -151,5 +170,6 @@ export const useCustomerFinancialProfileStore = defineStore('customerFinancialPr
         isLoading,
         error,
         fetchAllData,
+        clearData,
     };
 });

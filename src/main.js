@@ -11,6 +11,7 @@ import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import DialogService from 'primevue/dialogservice';
 import Panel from 'primevue/panel';
+import Select from 'primevue/select';
 import Step from 'primevue/step';
 import StepItem from 'primevue/stepitem';
 import StepList from 'primevue/steplist';
@@ -46,6 +47,7 @@ app.component('Step', Step);
 app.component('StepPanel', StepPanel);
 app.component('Button', Button);
 app.component('Card', Card);
+app.component('Select', Select);
 
 app.directive('styleclass', StyleClass);
 
