@@ -5,6 +5,16 @@ export default {
     content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
     plugins: [primeui],
     theme: {
+        screens: {
+            'xs': '320px',   // Extra Small Mobile
+            'sm': '481px',   // Small Mobile Landscape
+            'md': '601px',   // Medium (Tablet)
+            'lg': '769px',   // Large (Tablet)
+            'xl': '1025px',  // Small Desktop
+            '2xl': '1281px', // Medium Desktop
+            '3xl': '1441px', // Large Desktop
+            '4xl': '1921px', // Extra Large Screens
+        },
         extend: {
             colors: {
                 "primary-50": "rgb(var(--primary-50))",
@@ -32,7 +42,7 @@ export default {
                 "surface-950": "rgb(var(--surface-950))",
             },
             fontFamily: {
-                sans: ['Archivo', 'sans-serif'], // Set 'Archivo' as the default font
+                sans: ['Archivo', 'sans-serif'],
             },
         },
     },

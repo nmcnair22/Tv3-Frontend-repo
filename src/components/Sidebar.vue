@@ -181,19 +181,13 @@ const navs = ref([
         ]
     },
     {
-        icon: 'pi pi-credit-card',
-        label: 'Streamline',
-        subMenu: [
-            {
-                label: 'Dashboard',
-                path: '/streamline/dashboard'
-            },
-            {
-                label: 'Bill Imports',
-                path: '/streamline/bill-imports'
-            }
-        ]
-    },
+    icon: 'pi pi-credit-card',
+    label: 'Streamline',
+    subMenu: [
+      { label: 'Dashboard', path: '/streamline/dashboard' },
+      { label: 'Bill Imports', path: '/streamline/bill-imports' }
+    ]
+  },
     {
         icon: 'pi pi-sitemap',
         label: 'Managed Services',

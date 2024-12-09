@@ -20,6 +20,7 @@ import StepPanels from 'primevue/steppanels';
 import Stepper from 'primevue/stepper';
 import StyleClass from 'primevue/styleclass';
 import TabMenu from 'primevue/tabmenu';
+import Toast from 'primevue/toast';
 import ToastService from 'primevue/toastservice';
 import { createApp } from 'vue';
 import App from './App.vue';
@@ -48,6 +49,7 @@ app.component('StepPanel', StepPanel);
 app.component('Button', Button);
 app.component('Card', Card);
 app.component('Select', Select);
+app.component('Toast', Toast);
 
 app.directive('styleclass', StyleClass);
 

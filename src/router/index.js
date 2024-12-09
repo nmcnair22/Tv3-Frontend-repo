@@ -14,14 +14,16 @@ import FinanceDashboardLocalAgingPayments from '../pages/FinanceDashboardLocalAg
 import FinanceDashboardLocalInflows from '../pages/FinanceDashboardLocalInflows.vue';
 import Income from '../pages/Income.vue';
 import NewTab2 from '../pages/NewTab2.vue';
-import Paytrack from '../pages/Paytrack.vue'; // Main Paytrack Component
-import PaytrackOverview from '../pages/PaytrackOverview.vue'; // Paytrack Overview Page
-import PaytrackOverviewLocal from '../pages/PaytrackOverviewLocal.vue'; // New Paytrack Overview Local
+import Paytrack from '../pages/Paytrack.vue';
+import PaytrackOverview from '../pages/PaytrackOverview.vue';
+import PaytrackOverviewLocal from '../pages/PaytrackOverviewLocal.vue';
 import PrequalAnalytics from '../pages/prequal/PrequalAnalytics.vue';
 import PrequalDetail from '../pages/prequal/PrequalDetail.vue';
 import PrequalImportExport from '../pages/prequal/PrequalImportExport.vue';
 import PrequalQueue from '../pages/prequal/PrequalQueue.vue';
 import PrequalRequest from '../pages/prequal/PrequalRequest.vue';
+import BillDetailPage from '../pages/Streamline/BillDetailPage.vue';
+import StreamlineDashboard from '../pages/Streamline/StreamlineDashboard.vue';
 import TestPage from '../pages/TestPage.vue';
 
 // Create placeholder components
@@ -140,10 +142,6 @@ const routes = [
           headerType: 'with-tabs',
         },
       },
-      {
-        path: '',
-        redirect: '/finance/dashboard-local/inflows',
-      },
     ],
   },
   {
@@ -242,14 +240,25 @@ const routes = [
     ],
   },
   {
-    path: '/streamline/bill-imports',
-    component: Placeholder,
-    name: 'BillImports',
+    path: '/streamline/dashboard',
+    name: 'StreamlineDashboard',
+    component: StreamlineDashboard,
     meta: {
-      title: 'Bill Imports',
-      breadcrumb: ['Streamline', 'Bill Imports'],
+      title: 'Streamline Dashboard',
+      breadcrumb: ['Streamline', 'Dashboard'],
       headerType: 'default',
     },
+  },
+  {
+    path: '/streamline/bill/:billId',
+    name: 'BillDetail',
+    component: BillDetailPage,
+    meta: {
+      title: 'Bill Details',
+      breadcrumb: ['Streamline', 'Bill Details'],
+      headerType: 'default',
+    },
+    props: true,
   },
   {
     path: '/prequal',
