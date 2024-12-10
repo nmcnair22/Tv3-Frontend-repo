@@ -1,153 +1,287 @@
-<!-- src/pages/Streamline/BillDetailPage.vue -->
 <template>
-  <div>
-    <BillDetailHeader :bill="bill" />
+  <div class="min-h-screen bg-gradient-to-tl from-gray-100 to-gray-50 font-sans text-gray-800 px-4 py-2">
 
-    <div class="p-grid p-nogutter p-mt-4">
-      <!-- Bill Information Section -->
-      <div class="p-col-12 p-md-6">
-        <Card title="Bill Information">
-          <p><strong>Customer:</strong> {{ bill.customer }}</p>
-          <p><strong>Carrier:</strong> {{ bill.carrier }}</p>
-          <p><strong>Location:</strong> {{ bill.location }}</p>
-          <p><strong>Account Number:</strong> {{ bill.accountNumber }}</p>
-          <p><strong>Amount:</strong> ${{ bill.amount }}</p>
-          <p><strong>Expected Amount:</strong> ${{ bill.expectedAmount }}</p>
-          <p><strong>Variance:</strong> ${{ bill.variance }}</p>
-          <p><strong>Validation Status:</strong> <ValidationStatus :status="bill.validationStatus" /></p>
-          <p><strong>Processed At:</strong> {{ formattedDate(bill.processedAt) }}</p>
-        </Card>
+    <!-- Page Title and Navigation -->
+    <header class="mb-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl xs:text-3xl lg:text-4xl font-bold text-[#0B2244] mb-1">
+          Bill Details
+        </h1>
+        <p class="text-sm xs:text-base md:text-lg text-gray-600 max-w-3xl">
+          Review and edit the details of this bill, update line items, and verify data against the original document.
+        </p>
+      </div>
+      <div>
+        <Button label="Delete Bill" icon="pi pi-trash" severity="danger" @click="showDeleteConfirm = true" />
+      </div>
+    </header>
+
+    <div v-if="isLoadingSelectedBill" class="flex items-center justify-center py-4">
+      <i class="pi pi-spinner pi-spin mr-2"></i>
+      Loading bill details, please wait...
+    </div>
+
+    <div v-else-if="fetchError" class="text-red-500 text-sm">
+      {{ fetchError }}
+    </div>
+
+    <div v-else-if="selectedBill">
+      <!-- Main layout: left = info + details + line items, right = PDF -->
+      <div class="grid gap-3 md:grid-cols-2">
+        
+        <!-- Left Column: Use flexible sizing so it adjusts with screen size -->
+        <div class="flex flex-col gap-3">
+          <!-- Combined Info Card -->
+          <div class="bg-white p-3 rounded-lg shadow-sm space-y-3">
+            <h2 class="text-lg font-semibold text-[#0B2244] mb-2">Account, Customer & Vendor Info</h2>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col text-sm">
+                <label class="font-medium mb-1">Account Number</label>
+                <InputText v-model="selectedBill.account_number" />
+              </div>
+              <div class="flex flex-col text-sm">
+                <label class="font-medium mb-1">Expected Amount</label>
+                <InputNumber v-model="selectedBill.expected_amount" mode="currency" currency="USD" locale="en-US" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div v-if="selectedBill.account" class="flex flex-col text-sm">
+                <label class="font-medium mb-1">Pay Type</label>
+                <InputText v-model="selectedBill.account.pay_type" />
+              </div>
+              <div class="flex flex-col text-sm">
+                <label class="font-medium mb-1">Provider Name</label>
+                <InputText :value="selectedBill.account?.provider_name" disabled />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col text-sm">
+                <label class="font-medium mb-1">Customer Name</label>
+                <InputText v-model="selectedBill.customer_name" />
+              </div>
+              <div class="flex flex-col text-sm">
+                <label class="font-medium mb-1">Location Name</label>
+                <InputText v-model="selectedBill.location_name" />
+              </div>
+            </div>
+            <div class="flex flex-col text-sm">
+              <label class="font-medium mb-1">Carrier (Vendor)</label>
+              <InputText v-model="selectedBill.carrier_name" />
+            </div>
+          </div>
+
+          <!-- Bill Details & Line Items Card -->
+          <div class="bg-white p-3 rounded-lg shadow-sm space-y-3 flex-1 flex flex-col">
+            <h2 class="text-lg font-semibold text-[#0B2244]">Bill Details</h2>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div class="flex flex-col">
+                <label class="font-medium mb-1">Status</label>
+                <Select v-model="selectedBill.status" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Select Status" showClear />
+              </div>
+              <div class="flex flex-col">
+                <label class="font-medium mb-1">Sub-Status</label>
+                <Select v-model="selectedBill.subStatus" :options="subStatusOptions" optionLabel="label" optionValue="value" placeholder="Select Sub-Status" showClear />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div class="flex flex-col">
+                <label class="font-medium mb-1">Bill ID</label>
+                <InputText :value="selectedBill.id" disabled />
+              </div>
+              <div class="flex flex-col">
+                <label class="font-medium mb-1">Amount Due</label>
+                <InputNumber v-model="selectedBill.amount_due" mode="currency" currency="USD" locale="en-US" />
+              </div>
+              <div class="flex flex-col">
+                <label class="font-medium mb-1">Due Date</label>
+                <DatePicker v-model="selectedBill.due_date" dateFormat="yy-mm-dd" placeholder="Select date" showIcon />
+              </div>
+            </div>
+            <div class="flex flex-col text-sm">
+              <label class="font-medium mb-1">Notes</label>
+              <InputText v-model="selectedBill.notes" placeholder="Additional notes..." />
+            </div>
+            <div class="border-t pt-3 flex-1 flex flex-col">
+              <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-[#0B2244]">Line Items</h2>
+                <Button label="Add Item" icon="pi pi-plus" size="small" @click="addLineItem" />
+              </div>
+              <DataTable :value="selectedBill.line_items" dataKey="id" responsiveLayout="scroll" size="small" class="border border-gray-200 rounded-lg mt-2 flex-1">
+                <Column field="description" header="Description" />
+                <Column field="category" header="Category" />
+                <Column field="subcategory" header="Sub-Category" />
+                <Column field="amount" header="Amount">
+                  <template #body="slotProps">
+                    {{ formatCurrency(slotProps.data.amount) }}
+                  </template>
+                </Column>
+                <Column style="width:2rem;">
+                  <template #body="slotProps">
+                    <Button icon="pi pi-trash" class="p-button-text p-button-danger" @click="removeLineItem(slotProps.data)" />
+                  </template>
+                </Column>
+              </DataTable>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: PDF Viewer -->
+        <!-- Make it flexible to fill the screen: width:100% to fill column, height using viewport units -->
+        <!-- page-fit will adapt so the entire PDF page is visible at once -->
+        <div class="bg-white p-3 rounded-lg shadow-sm flex flex-col w-full" style="height:85vh;">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-lg font-semibold text-[#0B2244]">Bill Document</h2>
+            <div class="space-x-2">
+              <Button icon="pi pi-arrow-left" @click="prevPage" :disabled="currentPage <= 1" />
+              <Button icon="pi pi-arrow-right" @click="nextPage" :disabled="currentPage >= numPages" />
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <VuePdfEmbed
+              :source="pdfSource(selectedBill)"
+              :page="currentPage"
+              :zoomMode="'page-fit'"
+              @loaded="onPdfLoaded"
+              @load="onPdfLoad"
+              @error="onPdfError"
+              style="width: 100%; height: 100%;"
+            />
+          </div>
+
+          <div class="mt-2 text-sm text-gray-500 text-center">
+            Page {{ currentPage }} of {{ numPages }}
+          </div>
+        </div>
       </div>
 
-      <!-- Extracted Data Section -->
-      <div class="p-col-12 p-md-6">
-        <Card title="Extracted Data">
-          <pre>{{ bill.extractedData }}</pre>
-        </Card>
-      </div>
-
-      <!-- Notes Section -->
-      <div class="p-col-12 p-md-6">
-        <Card title="Notes">
-          <ul>
-            <li v-for="note in bill.notes" :key="note.id">
-              <strong>{{ note.author }}:</strong> {{ note.content }} <em>({{ formattedDate(note.createdAt) }})</em>
-            </li>
-            <li v-if="bill.notes.length === 0">No notes available.</li>
-          </ul>
-          <Textarea v-model="newNote" placeholder="Add a note..." rows="3" class="p-mt-2"></Textarea>
-          <Button label="Add Note" icon="pi pi-plus" class="p-mt-2" @click="addNote" />
-        </Card>
-      </div>
-
-      <!-- Audit Flags Section -->
-      <div class="p-col-12 p-md-6">
-        <Card title="Audit Flags">
-          <ul>
-            <li v-for="flag in bill.auditFlags" :key="flag.id">
-              {{ flag.reason }} <em>({{ formattedDate(flag.createdAt) }})</em>
-            </li>
-            <li v-if="bill.auditFlags.length === 0">No audit flags.</li>
-          </ul>
-          <Textarea v-model="newAuditFlag" placeholder="Add an audit flag..." rows="3" class="p-mt-2"></Textarea>
-          <Button label="Add Audit Flag" icon="pi pi-plus" class="p-mt-2" @click="addAuditFlag" />
-        </Card>
-      </div>
-
-      <!-- Account Lifecycle Management Section -->
-      <div class="p-col-12">
-        <Card title="Account Lifecycle Management">
-          <ul>
-            <li v-for="accountFlag in bill.accountFlags" :key="accountFlag.id">
-              {{ accountFlag.flag }} <em>({{ formattedDate(accountFlag.createdAt) }})</em>
-            </li>
-            <li v-if="bill.accountFlags.length === 0">No account flags.</li>
-          </ul>
-          <Textarea v-model="newAccountFlag" placeholder="Add an account flag..." rows="3" class="p-mt-2"></Textarea>
-          <Button label="Add Account Flag" icon="pi pi-plus" class="p-mt-2" @click="addAccountFlag" />
-        </Card>
-      </div>
+      <!-- Confirm Delete Dialog -->
+      <Dialog
+        header="Confirm Delete"
+        v-model:visible="showDeleteConfirm"
+        :modal="true"
+        :draggable="false"
+        :closable="false"
+      >
+        <p>Are you sure you want to delete this bill? This action cannot be undone.</p>
+        <template #footer>
+          <Button label="No" icon="pi pi-times" class="p-button-text" @click="showDeleteConfirm = false" />
+          <Button label="Yes" icon="pi pi-check" severity="danger" @click="deleteBill" />
+        </template>
+      </Dialog>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
+import { useBillImportStore } from '@/store/billImportStore';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+
 import Button from 'primevue/button';
-import Card from 'primevue/card';
-import Textarea from 'primevue/textarea';
-import { onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import BillDetailHeader from '../../components/Streamline/BillDetailHeader.vue';
-import ValidationStatus from '../../components/ValidationStatus.vue';
-import { useBillDetailStore } from '../../store/billDetailStore';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import DatePicker from 'primevue/datepicker';
+import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import VuePdfEmbed from 'vue-pdf-embed';
 
-const store = useBillDetailStore();
 const route = useRoute();
-const router = useRouter();
+const billImportStore = useBillImportStore();
 
-const billId = route.params.billId;
-const bill = ref(null);
-const newNote = ref('');
-const newAuditFlag = ref('');
-const newAccountFlag = ref('');
+const showDeleteConfirm = ref(false);
 
-// Fetch bill details
-const fetchBillDetails = async () => {
-  try {
-    await store.fetchBillDetails(billId);
-    bill.value = store.billDetails;
-  } catch (error) {
-    console.error('Error fetching bill details:', error);
+const statusOptions = [
+  { label: 'Processed', value: 'Processed' },
+  { label: 'Pending', value: 'Pending' },
+  { label: 'Cancelled', value: 'Cancelled' },
+];
+
+const subStatusOptions = [
+  { label: 'Under Review', value: 'Under Review' },
+  { label: 'Approved', value: 'Approved' },
+  { label: 'Rejected', value: 'Rejected' },
+];
+
+const selectedBill = computed(() => billImportStore.selectedBill);
+const isLoadingSelectedBill = computed(() => billImportStore.isLoadingSelectedBill);
+const fetchError = computed(() => billImportStore.fetchError);
+
+const currentPage = ref(1);
+const numPages = ref(1);
+
+function pdfSource(billData) {
+  if (!billData || !billData.archived_file_path) return null;
+  const url = `http://localhost:3000/api/bills/file?path=${encodeURIComponent(billData.archived_file_path)}`;
+  return url;
+}
+
+function onPdfLoad() {
+  console.log('PDF loaded successfully!');
+}
+
+function onPdfError(err) {
+  console.error('PDF failed to load:', err);
+}
+
+function onPdfLoaded(pdf) {
+  // pdf is an instance of PDFDocumentProxy
+  numPages.value = pdf.numPages;
+  if (currentPage.value > numPages.value) currentPage.value = numPages.value;
+}
+
+function nextPage() {
+  if (currentPage.value < numPages.value) currentPage.value++;
+}
+
+function prevPage() {
+  if (currentPage.value > 1) currentPage.value--;
+}
+
+function addLineItem() {
+  if (!selectedBill.value.line_items) {
+    selectedBill.value.line_items = [];
   }
-};
+  const newId = selectedBill.value.line_items.length
+    ? Math.max(...selectedBill.value.line_items.map(i => i.id)) + 1
+    : 1;
+  selectedBill.value.line_items.push({ id: newId, description: '', category: '', subcategory: '', amount: 0 });
+}
 
-// Add a new note
-const addNote = async () => {
-  if (!newNote.value.trim()) return;
-  try {
-    await store.addNoteToBill(billId, newNote.value);
-    newNote.value = '';
-    await fetchBillDetails();
-  } catch (error) {
-    console.error('Error adding note:', error);
+function removeLineItem(item) {
+  selectedBill.value.line_items = selectedBill.value.line_items.filter(li => li.id !== item.id);
+}
+
+function formatCurrency(value) {
+  if (value == null) return '';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+}
+
+function deleteBill() {
+  // Implement delete logic here
+  console.log('Bill deleted:', selectedBill.value.id);
+  showDeleteConfirm.value = false;
+}
+
+async function fetchBill() {
+  const billId = route.params.billId;
+  if (billId) {
+    await billImportStore.fetchBillById(billId);
   }
-};
+}
 
-// Add a new audit flag
-const addAuditFlag = async () => {
-  if (!newAuditFlag.value.trim()) return;
-  try {
-    await store.addAuditFlagToBill(billId, newAuditFlag.value);
-    newAuditFlag.value = '';
-    await fetchBillDetails();
-  } catch (error) {
-    console.error('Error adding audit flag:', error);
-  }
-};
-
-// Add a new account flag
-const addAccountFlag = async () => {
-  if (!newAccountFlag.value.trim()) return;
-  try {
-    await store.addAccountFlagToBill(billId, newAccountFlag.value);
-    newAccountFlag.value = '';
-    await fetchBillDetails();
-  } catch (error) {
-    console.error('Error adding account flag:', error);
-  }
-};
-
-// Format date
-const formattedDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleString();
-};
-
-onMounted(() => {
-  fetchBillDetails();
-});
+onMounted(fetchBill);
+watch(() => route.params.billId, fetchBill);
 </script>
 
 <style scoped>
-/* Add any necessary styling here */
+.whitespace-normal {
+  white-space: normal;
+}
+.break-words {
+  word-wrap: break-word;
+  word-break: break-word;
+}
 </style>

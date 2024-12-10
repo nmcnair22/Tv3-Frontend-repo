@@ -5,7 +5,7 @@
       <!-- Header -->
       <header class="mb-6 xs:mb-8 md:mb-10 2xl:mb-12">
         <h1 class="text-2xl xs:text-3xl lg:text-4xl font-bold text-[#0B2244] mb-2">
-          Bills Management
+          Recently Processed Bills
         </h1>
         <p class="text-sm xs:text-base md:text-lg text-gray-600 max-w-3xl">
           Review, filter, and export your recently processed bills, and easily view bill details.
@@ -111,6 +111,16 @@
               dataType="numeric"
               style="min-width:100px;"
             >
+              <!-- Added this body template -->
+              <template #body="slotProps">
+                <router-link
+                  :to="`/streamline/bill/${slotProps.data.id}`"
+                  class="text-blue-600 hover:underline"
+                >
+                  {{ slotProps.data.id }}
+                </router-link>
+              </template>
+
               <template #filter="{ filterModel }">
                 <InputNumber
                   v-model="filterModel.value"

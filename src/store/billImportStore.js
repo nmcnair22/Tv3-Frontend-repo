@@ -9,6 +9,8 @@ export const useBillImportStore = defineStore('billImport', {
         auditBills: [],
         processedBills: [],
         metrics: {},
+        selectedBill: null,          // New state property for a single selected bill
+        isLoadingSelectedBill: false,// Loading state for single bill fetch
         socket: null,
         isLoadingProcessingQueue: false,
         isLoadingAuditBills: false,
@@ -107,6 +109,37 @@ export const useBillImportStore = defineStore('billImport', {
                 console.error('Error uploading bills:', error);
                 this.fetchError = 'Failed to upload bills.';
                 throw error;
+            }
+        },
+
+        // New Action: Fetch a single bill by its ID
+        async fetchBillById(billId) {
+            this.isLoadingSelectedBill = true;
+            try {
+                const response = await apiClient.get(`/api/bills/bill/${billId}`);
+                const bill = response.data;
+
+                // Map nested fields to top-level fields similarly
+                const account = bill.account || {};
+                const customer = account.customer || {};
+                const location = account.location || {};
+                const vendor = account.vendor || {};
+
+                this.selectedBill = {
+                    ...bill,
+                    customer_name: customer.name ?? 'N/A',
+                    location_name: location.name ?? 'N/A',
+                    carrier_name: vendor.name ?? account.provider_name ?? 'N/A',
+                    account_number: account.account_number ?? 'N/A',
+                    expected_amount: account.expected_amount ?? null,
+                };
+
+                this.fetchError = null;
+            } catch (error) {
+                console.error(`Error fetching bill with ID ${billId}:`, error);
+                this.fetchError = `Failed to load bill ${billId}.`;
+            } finally {
+                this.isLoadingSelectedBill = false;
             }
         },
 
