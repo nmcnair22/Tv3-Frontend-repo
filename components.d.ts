@@ -78,6 +78,7 @@ declare module 'vue' {
     StatsWithGraph: typeof import('./src/components/statsWithGraph.vue')['default']
     StreamlineDashboard: typeof import('./src/components/StreamlineDashboard.vue')['default']
     TabMenu: typeof import('primevue/tabmenu')['default']
+    Toast: typeof import('primevue/toast')['default']
     ValidationStatus: typeof import('./src/components/ValidationStatus.vue')['default']
   }
 }

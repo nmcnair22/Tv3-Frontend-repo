@@ -3,7 +3,7 @@
     <!-- Header -->
     <header class="mb-4 flex items-center justify-between">
       <div>
-        <h1 class="text-2xl xs:text-3xl lg:text-4xl font-bold text-[#0B2244] mb-1">
+        <h1 class="text-2xl xs:text-3xl lg:text-4xl font-bold text-gray-900 mb-1">
           Bill Processing Dashboard
         </h1>
         <p class="text-sm xs:text-base md:text-lg text-gray-600 max-w-3xl">
@@ -78,7 +78,7 @@
 
     <!-- Processing Queue Table -->
     <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Processing Queue</h2>
+      <h2 class="text-xl font-semibold mb-2 text-gray-800">Processing Queue</h2>
       <div class="bg-white rounded-lg shadow-sm p-4 w-full overflow-auto">
         <DataTable
           :value="processingQueue"
@@ -95,13 +95,43 @@
           <Column field="status" header="Status" sortable />
           <Column field="priority" header="Priority" sortable />
           <Column field="createdAt" header="Enqueued At" :body="formatDate" sortable />
-          <Column header="Details" style="min-width:100px;" bodyClass="text-center">
+
+          <!-- Current Step/Status Column with Progress Bar -->
+          <Column header="Current Step" style="min-width:200px;">
+            <template #body="slotProps">
+              <div class="text-sm">
+                <div v-if="jobUpdates[slotProps.data.id]">
+                  <strong>Status:</strong> {{ jobUpdates[slotProps.data.id].status || 'N/A' }}<br/>
+                  <strong>Step:</strong> {{ jobUpdates[slotProps.data.id].step || 'N/A' }}<br/>
+                  <span v-if="jobUpdates[slotProps.data.id].detail">
+                    <strong>Detail:</strong> {{ jobUpdates[slotProps.data.id].detail }}
+                  </span>
+                  <div class="mt-2">
+                    <ProgressBar
+                      :value="getJobProgress(jobUpdates[slotProps.data.id])"
+                      :style="{ width: '100%' }"
+                      :showValue="true"
+                    />
+                  </div>
+                </div>
+                <div v-else>
+                  No updates yet...
+                  <div class="mt-2">
+                    <ProgressBar :value="0" :style="{ width: '100%' }" :showValue="true" />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Column>
+
+          <!-- Events Button Instead of Details -->
+          <Column header="Events" style="min-width:100px;" bodyClass="text-center">
             <template #body="slotProps">
               <Button
-                label="Details"
-                icon="pi pi-eye"
+                label="Events"
+                icon="pi pi-list"
                 class="p-button-text"
-                @click="openDrawer(slotProps.data)"
+                @click="openEventsDrawer(slotProps.data.id)"
               />
             </template>
           </Column>
@@ -109,42 +139,153 @@
       </div>
     </section>
 
-    <!-- Audit Queue Table -->
-    <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Audit Queue</h2>
-      <div class="bg-white rounded-lg shadow-sm p-4 w-full overflow-auto">
-        <DataTable
-          :value="auditBills"
-          dataKey="id"
-          paginator
-          :rows="10"
-          responsiveLayout="scroll"
-          :globalFilter="globalFilterValue"
-          :loading="isLoadingAuditBills"
-          sortMode="single"
-        >
-          <Column field="id" header="Bill ID" sortable />
-          <Column field="customer_name" header="Customer Name" sortable />
-          <Column field="invoice_id" header="Invoice ID" sortable />
-          <Column field="status" header="Status" sortable />
-          <Column field="error_message" header="Issue Description" />
-          <Column header="Details" style="min-width:100px;" bodyClass="text-center">
-            <template #body="slotProps">
-              <Button
-                label="Details"
-                icon="pi pi-eye"
-                class="p-button-text"
-                @click="openDrawer(slotProps.data)"
-              />
-            </template>
-          </Column>
-        </DataTable>
-      </div>
-    </section>
+    <!-- Tabs for Audit Queue and Missing Bills -->
+    <Tabs value="0">
+      <TabList>
+        <Tab value="0">Audit Queue</Tab>
+        <Tab value="1" @click="fetchMissingBillsData">
+          Missing Bills
+          <Badge :value="missingBills.length" class="ml-2" severity="info" />
+        </Tab>
+      </TabList>
+      <TabPanels>
+        <TabPanel value="0">
+          <!-- Audit Queue Table -->
+          <section class="mb-6">
+            <h2 class="text-xl font-semibold mb-2 text-gray-800">Audit Queue</h2>
+            <div class="bg-white rounded-lg shadow-sm p-4 w-full overflow-auto">
+              <DataTable
+                :value="auditBills"
+                dataKey="id"
+                paginator
+                :rows="10"
+                responsiveLayout="scroll"
+                :globalFilter="globalFilterValue"
+                :loading="isLoadingAuditBills"
+                sortMode="single"
+              >
+                <Column field="id" header="Bill ID" sortable />
+                <Column field="customer_name" header="Customer Name" sortable />
+                <Column field="invoice_id" header="Invoice ID" sortable />
+                <Column field="status" header="Status" sortable />
+                <Column field="error_message" header="Issue Description" />
+                <Column header="Details" style="min-width:100px;" bodyClass="text-center">
+                  <template #body="slotProps">
+                    <Button
+                      label="Details"
+                      icon="pi pi-eye"
+                      class="p-button-text"
+                      @click="openDrawer(slotProps.data)"
+                    />
+                  </template>
+                </Column>
+              </DataTable>
+            </div>
+          </section>
+        </TabPanel>
+
+        <TabPanel value="1">
+          <!-- Missing Bills Table -->
+          <section class="mb-6">
+            <h2 class="text-xl font-semibold mb-2 text-gray-800">Missing Bills</h2>
+            <div class="bg-white rounded-lg shadow-sm p-4 w-full overflow-auto">
+              <DataTable
+                :value="missingBills"
+                dataKey="accountId"
+                paginator
+                :rows="10"
+                responsiveLayout="scroll"
+                :loading="isLoadingMissingBills"
+                sortMode="single"
+                :globalFilter="globalFilterValue"
+                filterDisplay="menu"
+                rowHover
+                stripedRows
+                showGridlines
+                v-model:expandedRows="expandedMissingRows"
+              >
+                <Column expander style="width:2rem;"></Column>
+                <Column field="accountNumber" header="Account Number" sortable />
+                <Column field="customerName" header="Customer" sortable />
+                <Column field="locationName" header="Location" sortable />
+                <Column field="vendorName" header="Vendor" sortable />
+                <Column field="lastBillDueDate" header="Last Bill Due" sortable />
+                <Column field="missingBillDueIn" header="Missing Bill Due In (days)" sortable />
+
+                <!-- Updated Expansion Template for cleaner formatting -->
+                <template #expansion="slotProps">
+                  <div class="p-4 bg-gray-50 text-sm text-gray-700 border-t border-gray-200">
+                    <!-- Billing Details Section -->
+                    <div class="mb-4">
+                      <h5 class="text-base text-gray-800 font-semibold mb-2 flex items-center gap-2">
+                        <i class="pi pi-file text-yellow-500"></i> Billing Details
+                      </h5>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <span class="font-medium">Last Invoice Date:</span> {{ slotProps.data.lastInvoiceDate || 'N/A' }}<br/>
+                          <span class="font-medium">Last Invoice Amount:</span> {{ formatCurrency(slotProps.data.lastInvoiceAmount) }}<br/>
+                          <span class="font-medium">Expected Amount:</span> {{ formatCurrency(slotProps.data.expectedAmount) }}<br/>
+                          <span class="font-medium">Pay Type:</span> {{ slotProps.data.payType || 'N/A' }}
+                        </div>
+                        <div>
+                          <span class="font-medium">Notes:</span> {{ slotProps.data.notes || 'N/A' }}<br/>
+                          <span class="font-medium">Bill Notes:</span> {{ slotProps.data.billNotes || 'N/A' }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Vendor Info Section -->
+                    <div class="mb-4 border-t border-gray-200 pt-4">
+                      <h5 class="text-base text-gray-800 font-semibold mb-2 flex items-center gap-2">
+                        <i class="pi pi-briefcase text-blue-500"></i> Vendor Information
+                      </h5>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <span class="font-medium">Vendor Short Name:</span> {{ slotProps.data.vendorShortName || 'N/A' }}<br/>
+                          <span class="font-medium">Vendor Name on Check:</span> {{ slotProps.data.vendorNameOnCheck || 'N/A' }}<br/>
+                          <span class="font-medium">Vendor Phone:</span> {{ slotProps.data.vendorPhone || 'N/A' }}<br/>
+                          <span class="font-medium">Vendor Email:</span> {{ slotProps.data.vendorEmail || 'N/A' }}
+                        </div>
+                        <div>
+                          <span class="font-medium">Vendor Address:</span><br/>
+                          <span v-if="slotProps.data.vendorAddress" class="ml-4 block">
+                            <span v-if="slotProps.data.vendorAddress.address1">{{ slotProps.data.vendorAddress.address1 }}<br/></span>
+                            <span v-if="slotProps.data.vendorAddress.address2">{{ slotProps.data.vendorAddress.address2 }}<br/></span>
+                            <span>{{ slotProps.data.vendorAddress.city }}, {{ slotProps.data.vendorAddress.state }} {{ slotProps.data.vendorAddress.zip }}</span>
+                          </span>
+                          <span v-else class="ml-4 block text-gray-500">N/A</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Location Info Section -->
+                    <div class="border-t border-gray-200 pt-4">
+                      <h5 class="text-base text-gray-800 font-semibold mb-2 flex items-center gap-2">
+                        <i class="pi pi-map-marker text-green-500"></i> Location Information
+                      </h5>
+                      <div>
+                        <span class="font-medium">Location Address:</span><br/>
+                        <span v-if="slotProps.data.locationAddress" class="ml-4 block">
+                          <span v-if="slotProps.data.locationAddress.address">{{ slotProps.data.locationAddress.address }}<br/></span>
+                          <span v-if="slotProps.data.locationAddress.suite">{{ slotProps.data.locationAddress.suite }}<br/></span>
+                          <span>{{ slotProps.data.locationAddress.city }}, {{ slotProps.data.locationAddress.state }} {{ slotProps.data.locationAddress.zipcode }}</span><br/>
+                          <span v-if="slotProps.data.locationAddress.country">Country: {{ slotProps.data.locationAddress.country }}</span>
+                        </span>
+                        <span v-else class="ml-4 block text-gray-500">N/A</span>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </DataTable>
+            </div>
+          </section>
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
 
     <!-- Successful Scan Queue Table -->
     <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Successful Scan Queue</h2>
+      <h2 class="text-xl font-semibold mb-2 text-gray-800">Successful Scan Queue</h2>
       <div class="bg-white rounded-lg shadow-sm p-4 w-full overflow-auto">
         <DataTable
           :value="processedBills"
@@ -156,7 +297,18 @@
           :loading="isLoadingProcessedBills"
           sortMode="single"
         >
-          <Column field="id" header="Bill ID" sortable />
+          <!-- Make Bill ID clickable -->
+          <Column field="id" header="Bill ID" sortable>
+            <template #body="slotProps">
+              <router-link
+                :to="`/streamline/bill/${slotProps.data.id}`"
+                class="text-blue-600 hover:underline"
+              >
+                {{ slotProps.data.id }}
+              </router-link>
+            </template>
+          </Column>
+
           <Column field="account.customer.name" header="Customer" sortable />
           <Column field="account.account_number" header="Account Number" sortable />
           <Column field="status" header="Status" sortable />
@@ -177,15 +329,32 @@
 
     <!-- File Upload Section -->
     <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Upload New Bills</h2>
+      <h2 class="text-xl font-semibold mb-2 text-gray-800">Upload New Bills</h2>
       <FileUpload
-        name="files[]"
-        :customUpload="true"
+        ref="fileUploadRef"
+        name="files"
+        :multiple="true"
         accept=".pdf"
         :maxFileSize="10000000"
-        :uploadHandler="uploadBills"
-        multiple
-      />
+        :customUpload="true"
+        @uploader="onCustomUpload"
+        :previewWidth="0"
+      >
+        <template #empty>
+          <span>Drag and drop PDF files here, or click to select.</span>
+        </template>
+        <template #file="{ file }">
+          <div class="flex align-items-center gap-2 p-2 border-b border-gray-200">
+            <i class="pi pi-file-pdf" style="font-size: 1.5rem; color: #db4437;"></i>
+            <div class="flex flex-col">
+              <span class="font-medium text-gray-800 text-sm">{{ file.name }}</span>
+              <small class="text-gray-500">{{ formatSize(file.size) }}</small>
+            </div>
+            <Tag value="Pending" severity="warning" class="px-2 py-1 text-xs" />
+            <Button icon="pi pi-times" class="p-button-text p-button-danger p-1" @click="onRemove(file)" />
+          </div>
+        </template>
+      </FileUpload>
     </section>
 
     <Toast position="top-right" />
@@ -199,49 +368,46 @@
       position="right"
     >
       <template #header>
-        <div class="w-full h-14 flex items-center px-4 bg-[#0B2244]">
+        <div class="w-full h-14 flex items-center px-4 bg-gray-800">
           <h4 class="text-lg font-semibold text-white flex items-center gap-2">
-            <span class="w-1.5 h-4 bg-[#FFB400] rounded-sm"></span>
+            <span class="w-1.5 h-4 bg-yellow-500 rounded-sm"></span>
             Bill Details
           </h4>
         </div>
       </template>
 
-      <div class="p-4 space-y-6 text-sm text-[#595959] overflow-auto" :style="{ maxHeight: 'calc(100vh - 3rem)' }">
+      <div class="p-4 space-y-6 text-sm text-gray-700 overflow-auto" :style="{ maxHeight: 'calc(100vh - 3rem)' }">
         <div>
-          <h5 class="text-base text-[#0B2244] font-semibold flex items-center gap-2 mb-2">
-            <i class="pi pi-user text-[#FFB400]"></i> Customer & Account Info
+          <h5 class="text-base text-gray-800 font-semibold flex items-center gap-2 mb-2">
+            <i class="pi pi-user text-yellow-500"></i> Customer & Account Info
           </h5>
-          <div class="bg-[#297FB7]/[0.08] p-3 rounded space-y-1 text-gray-800">
+          <div class="bg-gray-50 p-3 rounded space-y-1">
             <div><strong>Customer:</strong> {{ selectedBill?.customer_name || 'N/A' }}</div>
             <div><strong>Account #:</strong> {{ selectedBill?.account_number || 'N/A' }}</div>
             <div><strong>Carrier (Vendor):</strong> {{ selectedBill?.carrier_name || 'N/A' }}</div>
             <div>
               <strong>Amount Due:</strong>
-              <span class="text-[#FFB400] font-semibold">{{ formatCurrency(selectedBill?.amount_due) }}</span>
+              <span class="text-yellow-600 font-semibold">{{ formatCurrency(selectedBill?.amount_due) }}</span>
             </div>
             <div><strong>Due Date:</strong> {{ formatDate(selectedBill?.due_date) }}</div>
             <div><strong>Location:</strong> {{ selectedBill?.location_name || 'N/A' }}</div>
           </div>
         </div>
 
-        <!-- PDF Preview Section -->
         <div>
           <div class="flex items-center justify-between mb-2">
-            <h5 class="text-base text-[#0B2244] font-semibold flex items-center gap-2">
-              <i class="pi pi-file text-[#FFB400]"></i> Bill Document
+            <h5 class="text-base text-gray-800 font-semibold flex items-center gap-2">
+              <i class="pi pi-file text-yellow-500"></i> Bill Document
             </h5>
             <Button
               label="Download Bill"
               icon="pi pi-download"
               size="small"
-              class="p-button-outlined p-button-secondary p-button-sm custom-download-bill-button"
+              class="p-button-outlined p-button-secondary p-button-sm"
               @click="downloadBill"
             />
           </div>
-          <div class="bg-[#297FB7]/[0.08] p-3 rounded space-y-1">
-            <!-- If the bill is from the processed bills and has archived_file_path, PDF is available -->
-            <!-- If it's from queue or audit and not processed, no PDF -->
+          <div class="bg-gray-50 p-3 rounded space-y-1">
             <div v-if="pdfSource(selectedBill)">
               <VuePdfEmbed
                 :source="pdfSource(selectedBill)"
@@ -251,6 +417,46 @@
               />
             </div>
             <div v-else class="text-red-500 text-sm">No PDF available</div>
+          </div>
+        </div>
+      </div>
+    </Drawer>
+
+    <!-- Events Drawer -->
+    <Drawer
+      v-model:visible="eventsDrawerVisible"
+      :modal="true"
+      :closable="true"
+      :style="{ width: '30rem' }"
+      position="right"
+    >
+      <template #header>
+        <div class="w-full h-14 flex items-center px-4 bg-gray-800">
+          <h4 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-yellow-500 rounded-sm"></span>
+            Event Logs for {{ selectedJobId || 'Unknown Job' }}
+          </h4>
+        </div>
+      </template>
+
+      <div class="p-4 space-y-2 overflow-auto" :style="{ maxHeight: 'calc(100vh - 3rem)' }">
+        <div v-if="isLoadingEvents" class="text-gray-600 text-sm">
+          Loading events...
+        </div>
+        <div v-else-if="selectedJobEvents.length === 0" class="text-gray-600 text-sm">
+          No events found for this job.
+        </div>
+        <div v-else>
+          <div v-for="event in selectedJobEvents" :key="event.id" class="border-b pb-2 mb-2">
+            <div class="text-sm text-gray-800 font-medium">
+              {{ event.type }}: {{ event.message }}
+            </div>
+            <div class="text-xs text-gray-500">
+              {{ formatDate(event.createdAt) }}
+            </div>
+            <div v-if="event.data" class="mt-1 p-2 bg-gray-50 rounded text-xs text-gray-700 whitespace-pre-wrap">
+              Additional Data: {{ JSON.stringify(event.data, null, 2) }}
+            </div>
           </div>
         </div>
       </div>
@@ -269,11 +475,21 @@ import DataTable from 'primevue/datatable';
 import Drawer from 'primevue/drawer';
 import FileUpload from 'primevue/fileupload';
 import InputText from 'primevue/inputtext';
+import ProgressBar from 'primevue/progressbar';
 import Select from 'primevue/select';
+import Tag from 'primevue/tag';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import VuePdfEmbed from 'vue-pdf-embed';
 import { useRouter } from 'vue-router';
+
+// Tab imports
+import Badge from 'primevue/badge';
+import Tab from 'primevue/tab';
+import TabList from 'primevue/tablist';
+import TabPanel from 'primevue/tabpanel';
+import TabPanels from 'primevue/tabpanels';
+import Tabs from 'primevue/tabs';
 
 const router = useRouter();
 const toast = useToast();
@@ -287,6 +503,11 @@ const {
   isLoadingAuditBills,
   isLoadingProcessedBills,
   metrics,
+  selectedJobEvents,
+  selectedJobId,
+  isLoadingEvents,
+  missingBills,
+  isLoadingMissingBills
 } = storeToRefs(billImportStore);
 
 const globalFilterValue = ref('');
@@ -300,10 +521,46 @@ const intervalOptions = [
 
 const drawerVisible = ref(false);
 const selectedBill = ref(null);
+const eventsDrawerVisible = ref(false);
+
+const fileUploadRef = ref(null);
+
+const jobUpdates = computed(() => billImportStore.jobUpdates);
+const displayedJobMessages = new Set();
+const expandedMissingRows = ref({});
 
 onMounted(() => {
   refreshAll();
 });
+
+watch(processingQueue, (newVal) => {
+  newVal.forEach(job => {
+    billImportStore.registerJobListeners(job.id);
+  });
+}, { immediate: true });
+
+watch(jobUpdates, (newVal) => {
+  for (const jobId in newVal) {
+    const jobData = newVal[jobId];
+
+    if (jobData.status === 'Completed' && jobData.step === 'ProcessingCompleted') {
+      if (!displayedJobMessages.has(jobId)) {
+        toast.add({ severity: 'success', summary: `Job ${jobId} Completed`, detail: jobData.detail || 'Bill processed successfully!', life: 3000 });
+        displayedJobMessages.add(jobId);
+      }
+    } else if (jobData.status === 'Duplicate') {
+      if (!displayedJobMessages.has(jobId)) {
+        toast.add({ severity: 'warn', summary: `Job ${jobId} Duplicate`, detail: 'This bill is a duplicate.', life: 3000 });
+        displayedJobMessages.add(jobId);
+      }
+    } else if (jobData.status === 'Error') {
+      if (!displayedJobMessages.has(jobId)) {
+        toast.add({ severity: 'error', summary: `Error (Job ${jobId})`, detail: jobData.error || 'An error occurred.', life: 3000 });
+        displayedJobMessages.add(jobId);
+      }
+    }
+  }
+}, { deep: true });
 
 function refreshAll() {
   billImportStore.fetchMetrics();
@@ -321,7 +578,11 @@ function fetchProcessedBills() {
   billImportStore.fetchProcessedBills(selectedInterval.value);
 }
 
-async function uploadBills(event) {
+async function fetchMissingBillsData() {
+  await billImportStore.fetchMissingBills();
+}
+
+async function onCustomUpload(event) {
   const files = event.files;
   const formData = new FormData();
 
@@ -331,11 +592,12 @@ async function uploadBills(event) {
 
   try {
     await billImportStore.uploadBills(formData);
-    toast.add({ severity: 'success', summary: 'Success', detail: 'Bills uploaded successfully!' });
-    billImportStore.fetchProcessingQueue();
+    toast.add({ severity: 'info', summary: 'Queued', detail: 'File(s) successfully queued for processing.', life: 3000 });
   } catch (error) {
     console.error('Error uploading bills:', error);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to upload bills.' });
+    toast.add({ severity: 'error', summary: 'Upload Error', detail: 'Failed to queue files.', life: 3000 });
+  } finally {
+    fileUploadRef.value.clear();
   }
 }
 
@@ -344,6 +606,18 @@ function formatDate(value) {
   const date = new Date(value);
   if (isNaN(date)) return 'N/A';
   return dayjs(date).format('MMM D, YYYY h:mm A');
+}
+
+function formatSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function onRemove(file) {
+  console.log('Remove file', file.name);
 }
 
 function formatCurrency(value) {
@@ -379,16 +653,57 @@ function downloadBill() {
 }
 
 function openDrawer(bill) {
-  // Assign the currently selected row data directly to selectedBill.
-  // For processed bills, archived_file_path should already be present from fetchProcessedBills.
-  // For queue or audit bills that aren't processed, archived_file_path won't exist, so no PDF.
   selectedBill.value = bill;
   drawerVisible.value = true;
+}
+
+async function openEventsDrawer(jobId) {
+  await billImportStore.fetchEventsForJob(jobId);
+  eventsDrawerVisible.value = true;
 }
 
 const drawerWidth = computed(() => {
   return window.innerWidth < 768 ? '100vw' : '48rem';
 });
+
+function getJobProgress(jobData) {
+  if (!jobData) return 0;
+
+  const { status, step } = jobData;
+  if (status === 'Completed') return 100;
+  if (status === 'Duplicate') return 100;
+  if (status === 'Audit') return 50;
+  if (status === 'Error') return 0;
+
+  if (!step) return 0;
+  const stepLower = step.toLowerCase();
+
+  if (stepLower.includes('analysis')) {
+    if (stepLower.includes('completed')) return 20;
+    return 10;
+  }
+
+  if (stepLower.includes('billtype')) {
+    return 40;
+  }
+
+  if (stepLower.includes('validation')) {
+    if (stepLower.includes('passed')) return 60;
+    if (stepLower.includes('failed')) return 50;
+    return 50;
+  }
+
+  if (stepLower.includes('finalization')) {
+    return 80;
+  }
+
+  if (stepLower.includes('archiving')) {
+    if (stepLower.includes('complete')) return 90;
+    return 85;
+  }
+
+  return 0;
+}
 </script>
 
 <style scoped>

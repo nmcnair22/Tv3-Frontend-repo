@@ -120,14 +120,21 @@
                     <Button icon="pi pi-trash" class="p-button-text p-button-danger" @click="removeLineItem(slotProps.data)" />
                   </template>
                 </Column>
+
+                <!-- Footer with total -->
+                <template #footer>
+                  <tr>
+                    <td colspan="3" class="text-right font-semibold">Total:</td>
+                    <td class="font-semibold">{{ formatCurrency(calculateLineItemsTotal(selectedBill.line_items)) }}</td>
+                    <td></td>
+                  </tr>
+                </template>
               </DataTable>
             </div>
           </div>
         </div>
 
         <!-- Right: PDF Viewer -->
-        <!-- Make it flexible to fill the screen: width:100% to fill column, height using viewport units -->
-        <!-- page-fit will adapt so the entire PDF page is visible at once -->
         <div class="bg-white p-3 rounded-lg shadow-sm flex flex-col w-full" style="height:85vh;">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-lg font-semibold text-[#0B2244]">Bill Document</h2>
@@ -263,6 +270,11 @@ function deleteBill() {
   // Implement delete logic here
   console.log('Bill deleted:', selectedBill.value.id);
   showDeleteConfirm.value = false;
+}
+
+function calculateLineItemsTotal(lineItems) {
+  if (!Array.isArray(lineItems)) return 0;
+  return lineItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 }
 
 async function fetchBill() {
